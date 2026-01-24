@@ -6,7 +6,22 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
-        .container { max-width: 1200px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+        
+        /* صفحة تسجيل الدخول */
+        .login-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .login-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); max-width: 400px; width: 100%; }
+        .login-card h2 { color: #1a73e8; margin-bottom: 30px; text-align: center; font-size: 28px; }
+        .login-card input { width: 100%; padding: 15px; margin: 10px 0; border: 2px solid #ddd; border-radius: 10px; font-size: 16px; }
+        .login-card input:focus { outline: none; border-color: #1a73e8; }
+        .login-card button { width: 100%; padding: 15px; margin-top: 20px; background: #1a73e8; color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .login-card button:hover { background: #0d47a1; transform: translateY(-2px); }
+        .login-card button:disabled { background: #ccc; transform: none; cursor: not-allowed; }
+        .error-msg { color: #dc3545; text-align: center; margin: 10px 0; font-weight: bold; font-size: 14px; }
+        .logout-btn { position: fixed; top: 20px; left: 20px; padding: 10px 20px; background: #dc3545; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; z-index: 100; }
+        
+        /* لوحة التحكم */
+        .container { max-width: 1200px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); display: none; }
+        .user-info { background: #e3f2fd; padding: 12px; border-radius: 8px; margin-bottom: 20px; text-align: center; color: #0d47a1; font-weight: bold; }
         h2 { color: #1a73e8; border-bottom: 3px solid #1a73e8; padding-bottom: 15px; margin-bottom: 25px; font-size: 24px; }
         
         /* الإحصائيات */
@@ -63,8 +78,29 @@
 </head>
 <body>
 
-<div class="container">
+<!-- صفحة تسجيل الدخول -->
+<div class="login-page" id="loginPage">
+    <div class="login-card">
+        <h2>🔐 تسجيل دخول المسؤول</h2>
+        <div id="loginError" class="error-msg"></div>
+        <input type="email" id="emailInput" placeholder="البريد الإلكتروني">
+        <input type="password" id="passwordInput" placeholder="كلمة المرور">
+        <button id="loginBtn" onclick="handleLogin()">تسجيل الدخول</button>
+    </div>
+</div>
+
+<!-- زر تسجيل الخروج -->
+<button class="logout-btn" id="logoutBtn" onclick="handleLogout()" style="display: none;">تسجيل خروج</button>
+
+<!-- لوحة التحكم -->
+<div class="container" id="adminPanel">
+    <div class="user-info" id="userInfo"></div>
+    
     <h2>🚀 لوحة التحكم - نسخة نظيفة ومحسّنة v9.0</h2>
+    
+    <div id="adminPhone" style="background: #e3f2fd; padding: 12px; border-radius: 8px; margin-bottom: 20px; text-align: center; display: none;">
+        <strong>📞 رقم المسؤول:</strong> <span id="phoneNumber" style="color: #1a73e8; font-size: 18px; font-weight: bold;"></span>
+    </div>
 
     <div class="stats">
         <div class="stat-box">
@@ -81,7 +117,12 @@
         </div>
     </div>
     
-    <textarea id="dataInput" placeholder="الصق قائمة السيارات هنا...&#10;&#10;مثال:&#10;كورولا شاسي 1234&#10;كامري شاسي 5678"></textarea>
+    <div style="background: #e7f3ff; border-left: 4px solid #2196F3; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+        <strong>💡 ملاحظة:</strong> ضع رقم هاتف المسؤول في <strong>أول سطر أو سطرين</strong> من القائمة
+        <div style="margin-top: 8px; font-size: 13px; color: #555;">مثال: 0912345678</div>
+    </div>
+    
+    <textarea id="dataInput" placeholder="الصق قائمة السيارات هنا...&#10;&#10;مثال:&#10;0912345678&#10;كورولا شاسي 1234&#10;كامري شاسي 5678"></textarea>
     
     <button class="btn btn-primary" id="uploadBtn" onclick="processData()">⚡ رفع القائمة</button>
     
@@ -124,6 +165,7 @@
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
 <script>
@@ -140,6 +182,82 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+const auth = firebase.auth();
+
+// ═══════════════════════════════════════════════════════
+// Authentication Functions
+// ═══════════════════════════════════════════════════════
+auth.onAuthStateChanged(user => {
+    if (user) {
+        showAdminPanel(user);
+    } else {
+        showLoginPage();
+    }
+});
+
+function showLoginPage() {
+    document.getElementById('loginPage').style.display = 'flex';
+    document.getElementById('adminPanel').style.display = 'none';
+    document.getElementById('logoutBtn').style.display = 'none';
+}
+
+function showAdminPanel(user) {
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('adminPanel').style.display = 'block';
+    document.getElementById('logoutBtn').style.display = 'block';
+    document.getElementById('userInfo').innerHTML = `👤 <strong>${user.email}</strong>`;
+    
+    loadCache();
+    loadPublicMatches();
+}
+
+async function handleLogin() {
+    const email = document.getElementById('emailInput').value.trim();
+    const password = document.getElementById('passwordInput').value;
+    const loginBtn = document.getElementById('loginBtn');
+    const errorDiv = document.getElementById('loginError');
+    
+    if (!email || !password) {
+        errorDiv.textContent = '⚠️ أدخل البريد الإلكتروني وكلمة المرور';
+        return;
+    }
+    
+    loginBtn.disabled = true;
+    loginBtn.textContent = '⏳ جاري تسجيل الدخول...';
+    errorDiv.textContent = '';
+    
+    try {
+        await auth.signInWithEmailAndPassword(email, password);
+    } catch (error) {
+        let errorMsg = '❌ خطأ في تسجيل الدخول';
+        
+        if (error.code === 'auth/user-not-found') errorMsg = '❌ المستخدم غير موجود';
+        else if (error.code === 'auth/wrong-password') errorMsg = '❌ كلمة المرور خاطئة';
+        else if (error.code === 'auth/invalid-email') errorMsg = '❌ البريد الإلكتروني غير صحيح';
+        else if (error.code === 'auth/too-many-requests') errorMsg = '❌ محاولات كثيرة. حاول بعد قليل';
+        
+        errorDiv.textContent = errorMsg;
+    } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'تسجيل الدخول';
+    }
+}
+
+async function handleLogout() {
+    if (confirm('هل تريد تسجيل الخروج؟')) {
+        await auth.signOut();
+    }
+}
+
+// السماح بتسجيل الدخول بالضغط على Enter
+document.addEventListener('DOMContentLoaded', () => {
+    const passwordInput = document.getElementById('passwordInput');
+    if (passwordInput) {
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleLogin();
+        });
+    }
+});
 
 // ═══════════════════════════════════════════════════════
 // Car Models Database
@@ -291,6 +409,11 @@ function updateStats() {
 // Process Data (Main Upload Function)
 // ═══════════════════════════════════════════════════════
 async function processData() {
+    if (!auth.currentUser) {
+        alert('⚠️ يجب تسجيل الدخول أولاً');
+        return;
+    }
+    
     const start = Date.now();
     const text = document.getElementById('dataInput').value.trim();
     const lines = text.split('\n').filter(l => l.trim());
@@ -303,8 +426,11 @@ async function processData() {
     
     await loadCache();
     
-    let finder = lines.find(l => /(0[19]\d{8,})/.test(l));
-    finder = finder ? finder.match(/(0[19]\d{8,})/)[0] : "غير مسجل";
+    // رقم المسؤول يكون في بداية القائمة (أول سطرين)
+    let finder = "غير مسجل";
+    const firstTwoLines = lines.slice(0, 2).join(' ');
+    const phoneMatch = firstTwoLines.match(/(0[19]\d{8,})/);
+    if (phoneMatch) finder = phoneMatch[0];
     
     const batch = db.batch();
     let added = 0, skipped = 0, duplicates = 0;
@@ -392,6 +518,11 @@ async function loadPublicMatches() {
 // Delete All Data
 // ═══════════════════════════════════════════════════════
 async function deleteAllData() {
+    if (!auth.currentUser) {
+        alert('⚠️ يجب تسجيل الدخول أولاً');
+        return;
+    }
+    
     const code = prompt("⚠️ رمز الحذف:\n\nDELETE2026");
     if (code !== "DELETE2026") return alert("رمز خاطئ");
     if (!confirm("🚨 حذف نهائي؟")) return;
@@ -421,12 +552,8 @@ async function deleteAllData() {
 }
 
 // ═══════════════════════════════════════════════════════
-// Initialize
+// Initialize (handled by auth.onAuthStateChanged)
 // ═══════════════════════════════════════════════════════
-window.onload = async () => {
-    await loadCache();
-    await loadPublicMatches();
-};
 </script>
 </body>
 </html>
