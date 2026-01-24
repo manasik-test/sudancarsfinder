@@ -436,22 +436,47 @@ async function processData() {
     let added = 0, skipped = 0, duplicates = 0;
     let matchesHTML = '';
     
+    // دالة تحويل الأرقام العربية إلى إنجليزية
+    function convertArabicNums(str) {
+        const arabicNums = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+        const englishNums = ['0','1','2','3','4','5','6','7','8','9'];
+        for (let i = 0; i < 10; i++) {
+            str = str.replace(new RegExp(arabicNums[i], 'g'), englishNums[i]);
+        }
+        return str;
+    }
+    
     for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
+        let line = lines[i].trim();
         setProgress(Math.round((i + 1) / lines.length * 100));
         
+        // تنظيف السطر
+        line = line.replace(/^\*+\s*/, '');     // إزالة النجوم من البداية
+        line = line.replace(/\.{2,}/g, ' ');    // إزالة النقاط المتعددة
+        line = convertArabicNums(line);          // تحويل الأرقام العربية
+        
+        // تجاهل الأسطر غير المفيدة
+        if (!line || line.length < 3) continue;
+        if (/^(حصر|رقم|المسؤول)/i.test(line)) continue;
+        
         const nums = line.match(/\d+/g);
-        if (!nums) continue;
+        if (!nums) { skipped++; continue; }
         
         const fullNum = nums.reduce((a, b) => a.length > b.length ? a : b);
-        if (fullNum.length < 1) { skipped++; continue; }
         
-        const isPlate = /لوحه|لوحة/.test(line);
+        
+        
+        const isPlate = /لوحه|لوحة|\/خ/.test(line);
         const suffix = normalizeChassis(fullNum, isPlate);
         
         let info = findModel(line);
         if (!info) {
-            info = await showModal(extractModel(line));
+            const possibleModel = extractModel(line);
+            if (possibleModel === "غير محدد" || possibleModel.length < 3) {
+                skipped++;
+                continue;
+            }
+            info = await showModal(possibleModel);
             if (!info) { skipped++; continue; }
         }
         
