@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>لوحة التحكم الآمنة v7.0</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 20px; color: #333; margin: 0; }
+        
+        /* صفحة تسجيل الدخول */
+        .login-container { 
+            max-width: 400px; 
+            margin: 100px auto; 
+            background: white; 
+            padding: 40px; 
+            border-radius: 15px; 
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1); 
+            text-align: center;
+        }
+        .login-container h2 { color: #1a73e8; margin-bottom: 30px; }
+        .login-container input { 
+            width: 100%; 
+            padding: 15px; 
+            margin: 10px 0; 
+            border: 2px solid #ddd; 
+            border-radius: 8px; 
+            font-size: 16px; 
+            box-sizing: border-box;
+        }
+        .login-container button { 
+            width: 100%; 
+            padding: 15px; 
+            background: #1a73e8; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 18px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            margin-top: 10px;
+        }
+        .login-container button:hover { background: #0d47a1; }
+        .login-container button:disabled { background: #ccc; cursor: not-allowed; }
+        .error-msg { color: #d32f2f; margin: 10px 0; font-weight: bold; }
+        .logout-btn { 
+            position: fixed; 
+            top: 20px; 
+            left: 20px; 
+            padding: 10px 20px; 
+            background: #dc3545; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: bold;
+        }
+        
+        /* صفحة الإدارة */
+        .container { max-width: 1100px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); display: none; }
+        h2 { color: #1a73e8; border-bottom: 2px solid #1a73e8; padding-bottom: 10px; margin-bottom: 20px; }
+        .user-info { background: #e3f2fd; padding: 10px; border-radius: 8px; margin-bottom: 20px; text-align: center; }
+        
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 25px; }
+        .stat-card { padding: 20px; border-radius: 12px; text-align: center; border: 1px solid transparent; }
+        .stat-found { background: #e3f2fd; border-color: #1a73e8; color: #0d47a1; }
+        .stat-missing { background: #fff3e0; border-color: #e67e22; color: #e65100; }
+        .stat-speed { background: #e8f5e9; border-color: #4caf50; color: #2e7d32; }
+        .stat-val { font-size: 28px; font-weight: bold; display: block; }
+        .stat-label { font-size: 14px; }
+
+        textarea { width: 100%; height: 160px; padding: 15px; border: 2px solid #ddd; border-radius: 10px; font-size: 15px; margin-bottom: 15px; box-sizing: border-box; }
+        .btn-main { background: #1a73e8; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 18px; font-weight: bold; transition: 0.3s; }
+        .btn-clear { background: #dc3545; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 15px; font-weight: bold; }
+        
+        #status { text-align: center; margin: 15px 0; font-weight: bold; }
+        .progress-bar { width: 100%; height: 25px; background: #e0e0e0; border-radius: 12px; overflow: hidden; margin: 10px 0; display: none; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #1a73e8, #4caf50); transition: width 0.3s; text-align: center; line-height: 25px; color: white; font-weight: bold; }
+        
+        .grid-tables { display: grid; grid-template-columns: 1fr; gap: 30px; margin-top: 20px; }
+        .section { background: white; border-radius: 10px; overflow: hidden; border: 1px solid #ddd; }
+        .upload-header { background: #0056b3; color: white; padding: 12px; font-weight: bold; }
+        .public-header { background: #28a745; color: white; padding: 12px; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { padding: 12px; border: 1px solid #eee; text-align: right; }
+        .match-found { background-color: #fff9c4; font-weight: bold; border-right: 5px solid #ffc107; }
+        .owner-num { color: #d32f2f; font-weight: bold; }
+        .finder-num { color: #1976d2; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<!-- صفحة تسجيل الدخول -->
+<div class="login-container" id="loginPage">
+    <h2>🔐 تسجيل دخول المسؤول</h2>
+    <div id="loginError" class="error-msg"></div>
+    <input type="email" id="emailInput" placeholder="البريد الإلكتروني">
+    <input type="password" id="passwordInput" placeholder="كلمة المرور">
+    <button id="loginBtn" onclick="handleLogin()">تسجيل الدخول</button>
+</div>
+
+<!-- صفحة الإدارة -->
+<button class="logout-btn" id="logoutBtn" onclick="handleLogout()" style="display: none;">تسجيل خروج</button>
+
+<div class="container" id="adminPage">
+    <div class="user-info" id="userInfo"></div>
+    
+    <h2>🚀 لوحة التحكم المحسّنة - v7.0</h2>
+
+    <div class="stats-grid">
+        <div class="stat-card stat-found">
+            <span class="stat-label">إجمالي السيارات في الحصر</span>
+            <span id="totalCarsCount" class="stat-val">0</span>
+        </div>
+        <div class="stat-card stat-missing">
+            <span class="stat-label">إجمالي طلبات البحث (المفقودات)</span>
+            <span id="totalMissingCount" class="stat-val">0</span>
+        </div>
+        <div class="stat-card stat-speed">
+            <span class="stat-label">سرعة المعالجة</span>
+            <span id="speedStat" class="stat-val">--</span>
+        </div>
+    </div>
+    
+    <textarea id="rawInput" placeholder="الصق القائمة هنا... سيقوم النظام بتجاهل المكرر تلقائياً والبحث عن مطابقات."></textarea>
+    
+    <button class="btn-main" onclick="processDataOptimized()">⚡ رفع القائمة (محسّن)</button>
+    <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill">0%</div></div>
+    <button class="btn-clear" onclick="clearData()">⚠️ مسح كافة البيانات</button>
+    
+    <div id="status"></div>
+
+    <div class="grid-tables">
+        <div class="section">
+            <div class="upload-header">⚡ مطابقات فورية (ظهرت الآن)</div>
+            <table>
+                <thead><tr><th>السيارة</th><th>رقم الشاسي/اللوحة</th><th>هاتف صاحبها</th><th>هاتف المسؤول</th></tr></thead>
+                <tbody id="uploadMatchesBody"></tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="public-header">📱 سجل مطابقات الجمهور</div>
+            <table>
+                <thead><tr><th>السيارة</th><th>الرقم</th><th>هاتف صاحبها</th><th>هاتف المسؤول</th><th>التاريخ</th></tr></thead>
+                <tbody id="publicMatchesBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDvAx6-priGfzGLh2AlazSkIvsoc0OcW4Q",
+        authDomain: "sudancarsrecover.firebaseapp.com",
+        projectId: "sudancarsrecover",
+        storageBucket: "sudancarsrecover.firebasestorage.app",
+        messagingSenderId: "222129422162",
+        appId: "1:222129422162:web:c3e8d3c498b53f96afc48b",
+        measurementId: "G-YQ7JLMYF51"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    // مراقبة حالة تسجيل الدخول
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            // المستخدم مسجل دخول
+            showAdminPage(user);
+        } else {
+            // المستخدم غير مسجل دخول
+            showLoginPage();
+        }
+    });
+
+    function showLoginPage() {
+        document.getElementById('loginPage').style.display = 'block';
+        document.getElementById('adminPage').style.display = 'none';
+        document.getElementById('logoutBtn').style.display = 'none';
+    }
+
+    function showAdminPage(user) {
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('adminPage').style.display = 'block';
+        document.getElementById('logoutBtn').style.display = 'block';
+        document.getElementById('userInfo').innerHTML = `👤 مرحباً: <strong>${user.email}</strong>`;
+        
+        // تحميل البيانات
+        loadCache().then(() => {
+            updateStatsFromCache();
+            loadPublic();
+        });
+    }
+
+    async function handleLogin() {
+        const email = document.getElementById('emailInput').value.trim();
+        const password = document.getElementById('passwordInput').value;
+        const loginBtn = document.getElementById('loginBtn');
+        const errorDiv = document.getElementById('loginError');
+        
+        if (!email || !password) {
+            errorDiv.textContent = '⚠️ يرجى إدخال البريد الإلكتروني وكلمة المرور';
+            return;
+        }
+        
+        loginBtn.disabled = true;
+        loginBtn.textContent = '⏳ جاري تسجيل الدخول...';
+        errorDiv.textContent = '';
+        
+        try {
+            await auth.signInWithEmailAndPassword(email, password);
+            // سيتم التوجيه تلقائياً عبر onAuthStateChanged
+        } catch (error) {
+            console.error('Login error:', error);
+            let errorMsg = '❌ خطأ في تسجيل الدخول';
+            
+            if (error.code === 'auth/user-not-found') {
+                errorMsg = '❌ المستخدم غير موجود';
+            } else if (error.code === 'auth/wrong-password') {
+                errorMsg = '❌ كلمة المرور خاطئة';
+            } else if (error.code === 'auth/invalid-email') {
+                errorMsg = '❌ البريد الإلكتروني غير صحيح';
+            } else if (error.code === 'auth/too-many-requests') {
+                errorMsg = '❌ محاولات كثيرة. حاول بعد قليل';
+            }
+            
+            errorDiv.textContent = errorMsg;
+        } finally {
+            loginBtn.disabled = false;
+            loginBtn.textContent = 'تسجيل الدخول';
+        }
+    }
+
+    async function handleLogout() {
+        if (confirm('هل تريد تسجيل الخروج؟')) {
+            await auth.signOut();
+        }
+    }
+
+    // السماح بتسجيل الدخول بالضغط على Enter
+    document.getElementById('passwordInput')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleLogin();
+    });
+
+    // ======== بقية الكود من النسخة المحسّنة ========
+    
+    let foundCarsCache = new Map();
+    let missingCarsCache = new Map();
+    let cacheLoaded = false;
+
+    const carDict = { 
+        "كورولا": "تويوتا", "مونكا": "تويوتا", "كامري": "تويوتا", 
+        "لاندكروزر": "تويوتا", "هايلوكس": "تويوتا", "بوكسي": "تويوتا", 
+        "اكسنت": "هيونداي", "سحلية": "هيونداي", "مضلع": "هيونداي", 
+        "أفانتي": "هيونداي", "أمجاد": "سوزوكي", "لانسر": "ميتسوبيشي" 
+    };
+
+    async function loadCache() {
+        if (cacheLoaded) return;
+        
+        const [foundSnap, missingSnap] = await Promise.all([
+            db.collection('found_cars').get(),
+            db.collection('missing_cars').get()
+        ]);
+
+        foundSnap.forEach(doc => {
+            const data = doc.data();
+            foundCarsCache.set(data.chassis_full, { id: doc.id, ...data });
+        });
+
+        missingSnap.forEach(doc => {
+            const data = doc.data();
+            const key = `${data.chassis_suffix}_${data.is_plate}`;
+            if (!missingCarsCache.has(key)) {
+                missingCarsCache.set(key, []);
+            }
+            missingCarsCache.get(key).push({ id: doc.id, ...data });
+        });
+
+        cacheLoaded = true;
+    }
+
+    function updateStatsFromCache() {
+        document.getElementById('totalCarsCount').innerText = foundCarsCache.size;
+        document.getElementById('totalMissingCount').innerText = 
+            Array.from(missingCarsCache.values()).reduce((sum, arr) => sum + arr.length, 0);
+    }
+
+    async function processDataOptimized() {
+        // تحقق من تسجيل الدخول
+        if (!auth.currentUser) {
+            alert('يجب تسجيل الدخول أولاً!');
+            return;
+        }
+        
+        const startTime = Date.now();
+        const text = document.getElementById('rawInput').value;
+        const lines = text.split('\n').filter(l => l.trim());
+        
+        if (lines.length === 0) {
+            alert("الرجاء إدخال البيانات");
+            return;
+        }
+
+        document.getElementById('progressBar').style.display = 'block';
+        document.getElementById('uploadMatchesBody').innerHTML = "";
+        document.getElementById('status').innerHTML = "⏳ جاري التحميل للذاكرة...";
+        
+        await loadCache();
+
+        let uploaded = 0, duplicates = 0;
+        let globalFinder = "غير مسجل";
+        let matchesHTML = "";
+
+        for (let line of lines) {
+            let phones = line.match(/(0[19]\d{8,})/g);
+            if (phones) { globalFinder = phones[0]; break; }
+        }
+
+        document.getElementById('status').innerHTML = "⚡ جاري المعالجة السريعة...";
+
+        const batch = db.batch();
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            
+            const progress = Math.round(((i + 1) / lines.length) * 100);
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('progressFill').innerText = progress + '%';
+
+            let allNums = line.match(/\d+/g);
+            if (!allNums) continue;
+            
+            let fullNum = allNums.reduce((a, b) => a.length > b.length ? a : b);
+            if (fullNum.length < 4) continue;
+            
+            let isPlate = /لوحه|لوحة/.test(line);
+            let suffix = isPlate ? fullNum : fullNum.slice(-4);
+
+            let model = "غير محدد", brand = "ماركات أخرى";
+            for (let key in carDict) {
+                if (line.includes(key)) { 
+                    model = key; 
+                    brand = carDict[key]; 
+                    break; 
+                }
+            }
+
+            if (!foundCarsCache.has(fullNum)) {
+                const newCarRef = db.collection('found_cars').doc();
+                const carData = {
+                    brand, model,
+                    chassis_full: fullNum,
+                    chassis_suffix: suffix,
+                    is_plate: isPlate,
+                    finder_phone: globalFinder,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                
+                batch.set(newCarRef, carData);
+                foundCarsCache.set(fullNum, { id: newCarRef.id, ...carData });
+                uploaded++;
+
+                const matchKey = `${suffix}_${isPlate}`;
+                if (missingCarsCache.has(matchKey)) {
+                    missingCarsCache.get(matchKey).forEach(m => {
+                        matchesHTML += `<tr class="match-found"><td>${brand}-${model}</td><td>${suffix}</td><td class="owner-num">${m.owner_phone}</td><td class="finder-num">${globalFinder}</td></tr>`;
+                    });
+                }
+            } else {
+                duplicates++;
+            }
+        }
+
+        if (uploaded > 0) {
+            await batch.commit();
+        }
+
+        const endTime = Date.now();
+        const timeTaken = ((endTime - startTime) / 1000).toFixed(2);
+        
+        document.getElementById('progressBar').style.display = 'none';
+        document.getElementById('status').innerHTML = `✅ المضاف: ${uploaded} | ⚠️ المكرر: ${duplicates} | ⏱️ الوقت: ${timeTaken} ثانية`;
+        document.getElementById('speedStat').innerText = `${timeTaken}s`;
+        document.getElementById('uploadMatchesBody').innerHTML = matchesHTML || '<tr><td colspan="4" style="text-align:center;">لا توجد مطابقات</td></tr>';
+        
+        updateStatsFromCache();
+        loadPublic();
+    }
+
+    async function loadPublic() {
+        const snap = await db.collection('confirmed_matches').orderBy('timestamp', 'desc').limit(100).get();
+        let h = "";
+        snap.forEach(d => {
+            const data = d.data();
+            const date = data.timestamp ? data.timestamp.toDate().toLocaleDateString('ar-EG') : '-';
+            h += `<tr><td>${data.brand}-${data.model}</td><td>${data.chassis_suffix}</td><td class="owner-num">${data.owner_phone}</td><td class="finder-num">${data.finder_phone}</td><td>${date}</td></tr>`;
+        });
+        document.getElementById('publicMatchesBody').innerHTML = h || '<tr><td colspan="5" style="text-align:center;">لا توجد مطابقات بعد</td></tr>';
+    }
+
+    async function clearData() {
+        if (!auth.currentUser) {
+            alert('يجب تسجيل الدخول أولاً!');
+            return;
+        }
+        
+        if (!confirm("🚨 تحذير: سيتم حذف كل البيانات. هل تريد المتابعة؟")) return;
+        
+        document.getElementById('status').innerHTML = "⏳ جاري المسح...";
+        
+        const cols = ['found_cars', 'missing_cars', 'confirmed_matches'];
+        for (const col of cols) {
+            const snap = await db.collection(col).get();
+            const batch = db.batch();
+            snap.forEach(d => batch.delete(d.ref));
+            await batch.commit();
+        }
+        
+        foundCarsCache.clear();
+        missingCarsCache.clear();
+        cacheLoaded = false;
+        
+        alert("✅ تم تصفير الداتابيس بنجاح");
+        location.reload();
+    }
+</script>
+</body>
+</html>

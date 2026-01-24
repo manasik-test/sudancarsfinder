@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>محرك البحث المحسّن - السودان</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 15px; text-align: center; }
+        .card { max-width: 450px; margin: auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        h2 { color: #1a73e8; margin-bottom: 20px; }
+        select, input, button { width: 100%; padding: 14px; margin: 10px 0; border-radius: 10px; border: 1px solid #ddd; font-size: 16px; box-sizing: border-box; }
+        button { background: #28a745; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #218838; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .type-selector { display: flex; gap: 10px; margin-bottom: 15px; }
+        .type-btn { flex: 1; padding: 12px; background: #eee; border-radius: 8px; cursor: pointer; font-size: 14px; border: 2px solid transparent; transition: 0.2s; }
+        input[type="radio"] { display: none; }
+        .type-btn:has(input:checked) { border-color: #1a73e8; background: #e3f2fd; font-weight: bold; }
+        #msg { display: none; padding: 15px; border-radius: 10px; margin-top: 15px; font-weight: bold; line-height: 1.6; }
+        .found { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .not-found { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        .spinner { display: none; margin: 10px auto; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #1a73e8; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>🔍 ابحث عن سيارتك (محسّن)</h2>
+    
+    <div class="type-selector">
+        <label class="type-btn"><input type="radio" name="searchType" value="chassis" checked><span>رقم شاسي (4 أرقام)</span></label>
+        <label class="type-btn"><input type="radio" name="searchType" value="plate"><span>رقم لوحة (كامل)</span></label>
+    </div>
+
+    <select id="brandSelect" onchange="updateModels()">
+        <option value="">-- اختر الماركة --</option>
+    </select>
+
+    <select id="modelSelect">
+        <option value="">-- اختر الموديل --</option>
+    </select>
+
+    <input type="text" id="suffix" placeholder="أدخل آخر 4 أرقام من الشاسي">
+    <input type="tel" id="phone" placeholder="رقم هاتفك (للتواصل)">
+
+    <button id="searchBtn" onclick="startSearchOptimized()">⚡ بدء البحث السريع</button>
+    <div class="spinner" id="spinner"></div>
+    <div id="msg"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDvAx6-priGfzGLh2AlazSkIvsoc0OcW4Q",
+        authDomain: "sudancarsrecover.firebaseapp.com",
+        projectId: "sudancarsrecover",
+        storageBucket: "sudancarsrecover.firebasestorage.app",
+        messagingSenderId: "222129422162",
+        appId: "1:222129422162:web:c3e8d3c498b53f96afc48b",
+        measurementId: "G-YQ7JLMYF51"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // تفعيل Persistence للعمل Offline
+    db.enablePersistence({ synchronizeTabs: true })
+        .catch(err => console.log("Persistence error:", err.code));
+
+    const carData = {
+        "تويوتا": ["كورولا (مونكا)", "كامري", "لاندكروزر (GXR)", "برادو", "هايلوكس (بوكسي)", "هايس (شريحة)"],
+        "هيونداي": ["اكسنت (مضلع/دبدوب/جياد)", "أفانتي (سحلية/منفوخة)", "توسان", "سنتافي", "سوناتا", "إلنترا", "اتوس"],
+        "كيا": ["مورنيق", "بيكانتو", "ريو", "سيراتو", "سورنتو", "سبورتج"],
+        "ميتسوبيشي": ["لانسر (بومة/قرش)", "باجيرو", "كانتر (دفار)"],
+        "سوزوكي": ["ألتو", "فيتارا", "سوزوكي فان (أمجاد)"],
+        "ماركات أخرى": ["مرسيدس", "بي ام دبليو", "شفروليه", "جيلي", "دايو", "إيسوزو"]
+    };
+
+    const suffixInput = document.getElementById('suffix');
+    const typeButtons = document.querySelectorAll('input[name="searchType"]');
+    const searchBtn = document.getElementById('searchBtn');
+    const spinner = document.getElementById('spinner');
+
+    // Cache بسيط للنتائج الأخيرة
+    const searchCache = new Map();
+    const CACHE_DURATION = 60000; // دقيقة واحدة
+
+    typeButtons.forEach(btn => {
+        btn.addEventListener('change', () => {
+            suffixInput.value = "";
+            if (btn.value === 'chassis') {
+                suffixInput.placeholder = "أدخل آخر 4 أرقام من الشاسي";
+                suffixInput.maxLength = 4;
+            } else {
+                suffixInput.placeholder = "أدخل رقم اللوحة (أرقام فقط)";
+                suffixInput.maxLength = 10;
+            }
+        });
+    });
+
+    suffixInput.addEventListener('input', (e) => {
+        suffixInput.value = suffixInput.value.replace(/[^0-9]/g, '');
+    });
+
+    function init() {
+        const brandSelect = document.getElementById('brandSelect');
+        for (let brand in carData) {
+            let opt = document.createElement('option');
+            opt.value = brand; 
+            opt.innerHTML = brand;
+            brandSelect.appendChild(opt);
+        }
+        suffixInput.maxLength = 4;
+    }
+
+    function updateModels() {
+        const brand = document.getElementById('brandSelect').value;
+        const modelSelect = document.getElementById('modelSelect');
+        modelSelect.innerHTML = '<option value="">-- اختر الموديل --</option>';
+        if (brand && carData[brand]) {
+            carData[brand].forEach(m => {
+                let opt = document.createElement('option');
+                opt.value = m; 
+                opt.innerHTML = m;
+                modelSelect.appendChild(opt);
+            });
+        }
+    }
+
+    async function startSearchOptimized() {
+        const brand = document.getElementById('brandSelect').value;
+        const model = document.getElementById('modelSelect').value;
+        const suffix = suffixInput.value.trim();
+        const phone = document.getElementById('phone').value.trim();
+        const isPlate = document.querySelector('input[name="searchType"]:checked').value === 'plate';
+        const msgDiv = document.getElementById('msg');
+
+        // التحقق من البيانات
+        if(!brand || !model || suffix === "" || !phone) { 
+            alert("يرجى إكمال البيانات"); 
+            return; 
+        }
+        if(!isPlate && suffix.length !== 4) { 
+            alert("يجب إدخال 4 أرقام للشاسي"); 
+            return; 
+        }
+
+        // تعطيل الزر وإظهار Spinner
+        searchBtn.disabled = true;
+        spinner.style.display = 'block';
+        msgDiv.style.display = 'none';
+
+        const cacheKey = `${suffix}_${isPlate}`;
+        const now = Date.now();
+
+        try {
+            // فحص الكاش أولاً
+            if (searchCache.has(cacheKey)) {
+                const cached = searchCache.get(cacheKey);
+                if (now - cached.timestamp < CACHE_DURATION) {
+                    await processSearchResult(cached.data, brand, model, suffix, phone, isPlate, msgDiv);
+                    searchBtn.disabled = false;
+                    spinner.style.display = 'none';
+                    return;
+                }
+            }
+
+            // استعلام محسّن مع Index
+            const snapshot = await db.collection('found_cars')
+                .where('chassis_suffix', '==', suffix)
+                .where('is_plate', '==', isPlate)
+                .limit(1) // نحتاج واحد فقط
+                .get();
+
+            // حفظ في الكاش
+            searchCache.set(cacheKey, {
+                data: snapshot,
+                timestamp: now
+            });
+
+            await processSearchResult(snapshot, brand, model, suffix, phone, isPlate, msgDiv);
+
+        } catch (error) {
+            console.error("Search error:", error);
+            msgDiv.style.display = 'block';
+            msgDiv.className = "msg not-found";
+            msgDiv.innerHTML = "❌ حدث خطأ في البحث. يرجى المحاولة مرة أخرى.";
+        } finally {
+            searchBtn.disabled = false;
+            spinner.style.display = 'none';
+        }
+    }
+
+    async function processSearchResult(snapshot, brand, model, suffix, phone, isPlate, msgDiv) {
+        msgDiv.style.display = 'block';
+
+        if (!snapshot.empty) {
+            let foundData = snapshot.docs[0].data();
+            msgDiv.className = "msg found";
+            msgDiv.innerHTML = `✅ أبشر! السيارة موجودة. سنتواصل معك لتأكيد الملكية`;
+            
+            // حفظ المطابقة
+            await db.collection('confirmed_matches').add({ 
+                brand, 
+                model, 
+                chassis_suffix: suffix, 
+                is_plate: isPlate, 
+                owner_phone: phone, 
+                finder_phone: foundData.finder_phone, 
+                timestamp: firebase.firestore.FieldValue.serverTimestamp() 
+            });
+        } else {
+            msgDiv.className = "msg not-found";
+            msgDiv.innerHTML = "🔔 لم تظهر بعد. تم تسجيل بياناتك وسنخطرك فور العثور عليها.";
+            
+            // تسجيل المفقود
+            await db.collection('missing_cars').add({ 
+                brand, 
+                model, 
+                chassis_suffix: suffix, 
+                is_plate: isPlate, 
+                owner_phone: phone, 
+                timestamp: firebase.firestore.FieldValue.serverTimestamp() 
+            });
+        }
+    }
+
+    init();
+</script>
+</body>
+</html>
