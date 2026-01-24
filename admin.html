@@ -430,17 +430,27 @@
             let totalDeleted = 0;
             
             for (const col of cols) {
+                document.getElementById('status').innerHTML = `⏳ جاري المسح... (${col})`;
+                
                 const snap = await db.collection(col).get();
                 const count = snap.size;
                 
                 if (count > 0) {
-                    const batch = db.batch();
-                    snap.forEach(d => batch.delete(d.ref));
-                    await batch.commit();
+                    // Firestore batch can handle max 500 operations
+                    // Split into multiple batches if needed
+                    const batchSize = 500;
+                    const batches = [];
+                    
+                    for (let i = 0; i < snap.docs.length; i += batchSize) {
+                        const batch = db.batch();
+                        const chunk = snap.docs.slice(i, i + batchSize);
+                        chunk.forEach(doc => batch.delete(doc.ref));
+                        batches.push(batch.commit());
+                    }
+                    
+                    await Promise.all(batches);
                     totalDeleted += count;
                 }
-                
-                document.getElementById('status').innerHTML = `⏳ جاري المسح... (${col})`;
             }
             
             foundCarsCache.clear();
@@ -456,8 +466,8 @@
             
         } catch (error) {
             console.error("Delete error:", error);
-            document.getElementById('status').innerHTML = "❌ حدث خطأ أثناء المسح";
-            alert("❌ حدث خطأ أثناء المسح. يرجى المحاولة مرة أخرى.");
+            document.getElementById('status').innerHTML = `❌ حدث خطأ: ${error.message}`;
+            alert(`❌ حدث خطأ أثناء المسح:\n${error.message}\n\nيرجى التحقق من Console (F12) للتفاصيل`);
         }
     }
 
