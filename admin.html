@@ -421,35 +421,53 @@
     }
 
     async function clearData() {
-        if (!confirm("🚨 تحذير: سيتم حذف كل البيانات. هل تريد المتابعة؟")) return;
+        // طلب رمز التأكيد
+        const confirmCode = prompt("⚠️ لحذف كل البيانات، أدخل رمز التأكيد:\n\n(الرمز: DELETE2026)");
+        
+        if (confirmCode !== "DELETE2026") {
+            alert("❌ رمز التأكيد خاطئ!");
+            return;
+        }
+        
+        if (!confirm("🚨 تحذير نهائي: سيتم حذف كل البيانات بشكل نهائي. هل أنت متأكد؟")) return;
         
         try {
             document.getElementById('status').innerHTML = "⏳ جاري المسح...";
             
             const cols = ['found_cars', 'missing_cars', 'confirmed_matches'];
             let totalDeleted = 0;
+            let errors = [];
             
             for (const col of cols) {
                 document.getElementById('status').innerHTML = `⏳ جاري المسح... (${col})`;
                 
-                const snap = await db.collection(col).get();
-                const count = snap.size;
-                
-                if (count > 0) {
-                    // Firestore batch can handle max 500 operations
-                    // Split into multiple batches if needed
-                    const batchSize = 500;
-                    const batches = [];
+                try {
+                    const snap = await db.collection(col).get();
+                    const count = snap.size;
                     
-                    for (let i = 0; i < snap.docs.length; i += batchSize) {
-                        const batch = db.batch();
-                        const chunk = snap.docs.slice(i, i + batchSize);
-                        chunk.forEach(doc => batch.delete(doc.ref));
-                        batches.push(batch.commit());
+                    if (count > 0) {
+                        // حذف كل document على حدة
+                        let deleted = 0;
+                        for (const doc of snap.docs) {
+                            try {
+                                await doc.ref.delete();
+                                deleted++;
+                                
+                                // تحديث التقدم كل 10 سجلات
+                                if (deleted % 10 === 0) {
+                                    document.getElementById('status').innerHTML = 
+                                        `⏳ جاري المسح... (${col}: ${deleted}/${count})`;
+                                }
+                            } catch (docError) {
+                                console.error(`Error deleting doc ${doc.id}:`, docError);
+                                errors.push(`${col}/${doc.id}: ${docError.message}`);
+                            }
+                        }
+                        totalDeleted += deleted;
                     }
-                    
-                    await Promise.all(batches);
-                    totalDeleted += count;
+                } catch (colError) {
+                    console.error(`Error with collection ${col}:`, colError);
+                    errors.push(`${col}: ${colError.message}`);
                 }
             }
             
@@ -457,17 +475,40 @@
             missingCarsCache.clear();
             cacheLoaded = false;
             
-            document.getElementById('status').innerHTML = `✅ تم حذف ${totalDeleted} سجل بنجاح`;
-            alert(`✅ تم تصفير الداتابيس بنجاح!\n\nتم حذف ${totalDeleted} سجل`);
+            if (errors.length > 0) {
+                document.getElementById('status').innerHTML = `⚠️ تم حذف ${totalDeleted} سجل مع بعض الأخطاء`;
+                alert(`⚠️ تم حذف ${totalDeleted} سجل\n\nلكن حدثت ${errors.length} أخطاء.\n\nافتح Console (F12) لرؤية التفاصيل.`);
+                console.error("Delete errors:", errors);
+            } else {
+                document.getElementById('status').innerHTML = `✅ تم حذف ${totalDeleted} سجل بنجاح`;
+                alert(`✅ تم تصفير الداتابيس بنجاح!\n\nتم حذف ${totalDeleted} سجل`);
+            }
             
             setTimeout(() => {
                 location.reload();
-            }, 1000);
+            }, 2000);
             
         } catch (error) {
             console.error("Delete error:", error);
             document.getElementById('status').innerHTML = `❌ حدث خطأ: ${error.message}`;
-            alert(`❌ حدث خطأ أثناء المسح:\n${error.message}\n\nيرجى التحقق من Console (F12) للتفاصيل`);
+            
+            let errorMsg = "❌ حدث خطأ أثناء المسح:\n\n";
+            
+            if (error.code === 'permission-denied' || error.message.includes('permissions')) {
+                errorMsg += "المشكلة: صلاحيات Firestore\n\n";
+                errorMsg += "الحل:\n";
+                errorMsg += "1. افتح Firebase Console\n";
+                errorMsg += "2. اذهب إلى Firestore → Rules\n";
+                errorMsg += "3. غيّر القواعد إلى:\n\n";
+                errorMsg += "match /{document=**} {\n";
+                errorMsg += "  allow read, write: if true;\n";
+                errorMsg += "}\n\n";
+                errorMsg += "4. اضغط Publish وانتظر 30 ثانية";
+            } else {
+                errorMsg += error.message;
+            }
+            
+            alert(errorMsg);
         }
     }
 
