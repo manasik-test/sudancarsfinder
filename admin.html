@@ -2,62 +2,11 @@
 <html dir="rtl" lang="ar">
 <head>
     <meta charset="UTF-8">
-    <title>لوحة التحكم الآمنة v7.0</title>
+    <title>لوحة التحكم النهائية v8.5</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 20px; color: #333; margin: 0; }
-        
-        /* صفحة تسجيل الدخول */
-        .login-container { 
-            max-width: 400px; 
-            margin: 100px auto; 
-            background: white; 
-            padding: 40px; 
-            border-radius: 15px; 
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1); 
-            text-align: center;
-        }
-        .login-container h2 { color: #1a73e8; margin-bottom: 30px; }
-        .login-container input { 
-            width: 100%; 
-            padding: 15px; 
-            margin: 10px 0; 
-            border: 2px solid #ddd; 
-            border-radius: 8px; 
-            font-size: 16px; 
-            box-sizing: border-box;
-        }
-        .login-container button { 
-            width: 100%; 
-            padding: 15px; 
-            background: #1a73e8; 
-            color: white; 
-            border: none; 
-            border-radius: 8px; 
-            font-size: 18px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            margin-top: 10px;
-        }
-        .login-container button:hover { background: #0d47a1; }
-        .login-container button:disabled { background: #ccc; cursor: not-allowed; }
-        .error-msg { color: #d32f2f; margin: 10px 0; font-weight: bold; }
-        .logout-btn { 
-            position: fixed; 
-            top: 20px; 
-            left: 20px; 
-            padding: 10px 20px; 
-            background: #dc3545; 
-            color: white; 
-            border: none; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            font-weight: bold;
-        }
-        
-        /* صفحة الإدارة */
-        .container { max-width: 1100px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); display: none; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
         h2 { color: #1a73e8; border-bottom: 2px solid #1a73e8; padding-bottom: 10px; margin-bottom: 20px; }
-        .user-info { background: #e3f2fd; padding: 10px; border-radius: 8px; margin-bottom: 20px; text-align: center; }
         
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 25px; }
         .stat-card { padding: 20px; border-radius: 12px; text-align: center; border: 1px solid transparent; }
@@ -75,6 +24,13 @@
         .progress-bar { width: 100%; height: 25px; background: #e0e0e0; border-radius: 12px; overflow: hidden; margin: 10px 0; display: none; }
         .progress-fill { height: 100%; background: linear-gradient(90deg, #1a73e8, #4caf50); transition: width 0.3s; text-align: center; line-height: 25px; color: white; font-weight: bold; }
         
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
+        .modal-content { background: white; margin: 10% auto; padding: 30px; border-radius: 15px; width: 90%; max-width: 500px; box-shadow: 0 5px 30px rgba(0,0,0,0.3); }
+        .modal-content h3 { color: #1a73e8; margin-bottom: 20px; }
+        .modal-content select, .modal-content button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; font-size: 16px; }
+        .modal-content button { background: #28a745; color: white; border: none; font-weight: bold; cursor: pointer; }
+        .modal-content button.cancel { background: #6c757d; }
+        
         .grid-tables { display: grid; grid-template-columns: 1fr; gap: 30px; margin-top: 20px; }
         .section { background: white; border-radius: 10px; overflow: hidden; border: 1px solid #ddd; }
         .upload-header { background: #0056b3; color: white; padding: 12px; font-weight: bold; }
@@ -88,22 +44,8 @@
 </head>
 <body>
 
-<!-- صفحة تسجيل الدخول -->
-<div class="login-container" id="loginPage">
-    <h2>🔐 تسجيل دخول المسؤول</h2>
-    <div id="loginError" class="error-msg"></div>
-    <input type="email" id="emailInput" placeholder="البريد الإلكتروني">
-    <input type="password" id="passwordInput" placeholder="كلمة المرور">
-    <button id="loginBtn" onclick="handleLogin()">تسجيل الدخول</button>
-</div>
-
-<!-- صفحة الإدارة -->
-<button class="logout-btn" id="logoutBtn" onclick="handleLogout()" style="display: none;">تسجيل خروج</button>
-
-<div class="container" id="adminPage">
-    <div class="user-info" id="userInfo"></div>
-    
-    <h2>🚀 لوحة التحكم المحسّنة - v7.0</h2>
+<div class="container">
+    <h2>🚀 لوحة التحكم النهائية - v8.5</h2>
 
     <div class="stats-grid">
         <div class="stat-card stat-found">
@@ -147,8 +89,18 @@
     </div>
 </div>
 
+<div id="unknownModelModal" class="modal">
+    <div class="modal-content">
+        <h3>🚗 اكتشاف موديل جديد</h3>
+        <p>تم العثور على موديل غير مسجل: <strong id="unknownModelName"></strong></p>
+        <p>الرجاء اختيار الماركة المناسبة:</p>
+        <select id="brandSelectModal"></select>
+        <button onclick="saveUnknownModel()">حفظ وإضافة للقائمة</button>
+        <button class="cancel" onclick="skipUnknownModel()">تجاهل هذا السطر</button>
+    </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
 <script>
@@ -163,123 +115,115 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    const auth = firebase.auth();
 
-    // مراقبة حالة تسجيل الدخول
-    auth.onAuthStateChanged((user) => {
-        if (user) {
-            // المستخدم مسجل دخول
-            showAdminPage(user);
-        } else {
-            // المستخدم غير مسجل دخول
-            showLoginPage();
-        }
-    });
-
-    function showLoginPage() {
-        document.getElementById('loginPage').style.display = 'block';
-        document.getElementById('adminPage').style.display = 'none';
-        document.getElementById('logoutBtn').style.display = 'none';
-    }
-
-    function showAdminPage(user) {
-        document.getElementById('loginPage').style.display = 'none';
-        document.getElementById('adminPage').style.display = 'block';
-        document.getElementById('logoutBtn').style.display = 'block';
-        document.getElementById('userInfo').innerHTML = `👤 مرحباً: <strong>${user.email}</strong>`;
-        
-        // تحميل البيانات
-        loadCache().then(() => {
-            updateStatsFromCache();
-            loadPublic();
-        });
-    }
-
-    async function handleLogin() {
-        const email = document.getElementById('emailInput').value.trim();
-        const password = document.getElementById('passwordInput').value;
-        const loginBtn = document.getElementById('loginBtn');
-        const errorDiv = document.getElementById('loginError');
-        
-        if (!email || !password) {
-            errorDiv.textContent = '⚠️ يرجى إدخال البريد الإلكتروني وكلمة المرور';
-            return;
-        }
-        
-        loginBtn.disabled = true;
-        loginBtn.textContent = '⏳ جاري تسجيل الدخول...';
-        errorDiv.textContent = '';
-        
-        try {
-            await auth.signInWithEmailAndPassword(email, password);
-            // سيتم التوجيه تلقائياً عبر onAuthStateChanged
-        } catch (error) {
-            console.error('Login error:', error);
-            let errorMsg = '❌ خطأ في تسجيل الدخول';
-            
-            if (error.code === 'auth/user-not-found') {
-                errorMsg = '❌ المستخدم غير موجود';
-            } else if (error.code === 'auth/wrong-password') {
-                errorMsg = '❌ كلمة المرور خاطئة';
-            } else if (error.code === 'auth/invalid-email') {
-                errorMsg = '❌ البريد الإلكتروني غير صحيح';
-            } else if (error.code === 'auth/too-many-requests') {
-                errorMsg = '❌ محاولات كثيرة. حاول بعد قليل';
-            }
-            
-            errorDiv.textContent = errorMsg;
-        } finally {
-            loginBtn.disabled = false;
-            loginBtn.textContent = 'تسجيل الدخول';
-        }
-    }
-
-    async function handleLogout() {
-        if (confirm('هل تريد تسجيل الخروج؟')) {
-            await auth.signOut();
-        }
-    }
-
-    // السماح بتسجيل الدخول بالضغط على Enter
-    document.getElementById('passwordInput')?.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleLogin();
-    });
-
-    // ======== بقية الكود من النسخة المحسّنة ========
-    
     let foundCarsCache = new Map();
     let missingCarsCache = new Map();
     let cacheLoaded = false;
 
-    const carDict = { 
+    // قاعدة بيانات الموديلات الشاملة والنهائية
+    const carDict = {
+        // 1. تويوتا
         "كورولا": "تويوتا", "مونكا": "تويوتا", "كامري": "تويوتا", 
-        "لاندكروزر": "تويوتا", "هايلوكس": "تويوتا", "بوكسي": "تويوتا", 
-        "اكسنت": "هيونداي", "سحلية": "هيونداي", "مضلع": "هيونداي", 
-        "أفانتي": "هيونداي", "أمجاد": "سوزوكي", "لانسر": "ميتسوبيشي" 
+        "لاندكروزر": "تويوتا", "كروزر": "تويوتا", "برادو": "تويوتا", 
+        "فورشنر": "تويوتا", "هايلوكس": "تويوتا", "بوكسي": "تويوتا", 
+        "بكس تايوتا": "تويوتا", "يارس": "تويوتا", "هايس": "تويوتا", 
+        "شريحة": "تويوتا", "راف فور": "تويوتا", "راف": "تويوتا", "كوستر": "تويوتا",
+        
+        // 2. هيونداي
+        "اكسنت": "هيونداي", "مضلع": "هيونداي", "دبدوب": "هيونداي", "جياد": "هيونداي",
+        "أفانتي": "هيونداي", "افانتي": "هيونداي", "سحلية": "هيونداي", "منفوخة": "هيونداي",
+        "فيرنا": "هيونداي", "اي تن": "هيونداي", "طيور الجنة": "هيونداي", "قراند": "هيونداي",
+        "كلك": "هيونداي", "قيتز": "هيونداي", "توسان": "هيونداي", "سنتافي": "هيونداي",
+        "سوناتا": "هيونداي", "إلنترا": "هيونداي", "النترا": "هيونداي", "ستاريكس": "هيونداي",
+        "اتش ون": "هيونداي", "جريس": "هيونداي", "كريز": "هيونداي", "ايون": "هيونداي",
+        "اي تونتي": "هيونداي", "اي ثيرتي": "هيونداي", "ماتركس": "هيونداي", 
+        "لافيتا": "هيونداي", "بورتر هيونداي": "هيونداي", "اتوس": "هيونداي", "اتس": "هيونداي",
+        
+        // 3. كيا
+        "مورنيق": "كيا", "بيكانتو": "كيا", "ريو": "كيا", "سيراتو": "كيا",
+        "سورنتو": "كيا", "سبورتج": "كيا", "اوبتما": "كيا", "فيستو": "كيا",
+        "أمجاد كيا": "كيا",
+        
+        // 4. ميتسوبيشي
+        "لانسر": "ميتسوبيشي", "بومة": "ميتسوبيشي", "قرش": "ميتسوبيشي", 
+        "باجيرو": "ميتسوبيشي", "اتراج": "ميتسوبيشي", "اوتلاندر": "ميتسوبيشي", 
+        "ميراج": "ميتسوبيشي", "L300": "ميتسوبيشي", "كانتر": "ميتسوبيشي", 
+        "دفار ميتسوبيشي": "ميتسوبيشي", "بكس ميتسوبيشي": "ميتسوبيشي",
+        
+        // 5. نيسان
+        "صني": "نيسان", "سنترا": "نيسان", "تيدا": "نيسان", "باترول": "نيسان",
+        "مورانو": "نيسان", "اكس تريل": "نيسان", "لافينا": "نيسان", 
+        "بيك أب نيسان": "نيسان", "بكس نيسان": "نيسان",
+        
+        // 6. سوزوكي
+        "ألتو": "سوزوكي", "التو": "سوزوكي", "فيتارا": "سوزوكي", 
+        "سوزوكي فان": "سوزوكي", "أمجاد": "سوزوكي", "امجاد": "سوزوكي",
+        
+        // 7. فولكس فاجن
+        "باسات": "فولكس فاجن", "بولو": "فولكس فاجن", "بورا": "فولكس فاجن",
+        
+        // 8. هوندا
+        "سيفيك": "هوندا", "سيتي": "هوندا",
+        
+        // 9. سكودا
+        "فابيا": "سكودا", "اوكتافيا": "سكودا", "سيبريور": "سكودا",
+        
+        // 10. بي واي دي
+        "بي واي دي صالون": "بي واي دي", "بي واي دي استيشن": "بي واي دي", 
+        "بي واي دي تكسي": "بي واي دي", "تكسي بي واي دي": "بي واي دي",
+        
+        // 11. تاتا
+        "تاتا بكس": "تاتا", "تاتا بص": "تاتا", "تاتا دفار": "تاتا", 
+        "تاتا بورتر": "تاتا", "بورتر تاتا": "تاتا",
+        
+        // 12. رأس شاحنة
+        "فولفو": "رأس شاحنة", "مرسيدس شاحنة": "رأس شاحنة", "مان": "رأس شاحنة",
+        "هينو": "رأس شاحنة", "رأس شاحنة صيني": "رأس شاحنة", "شاحنة صيني": "رأس شاحنة",
+        "رينو شاحنة": "رأس شاحنة", "اسكانيا": "رأس شاحنة", "داف": "رأس شاحنة",
+        
+        // 13. ايسوزو
+        "ايسوزو دفار": "ايسوزو", "دفار ايسوزو": "ايسوزو", "ايسوزو بكس": "ايسوزو",
+        "بكس ايسوزو": "ايسوزو", "ايسوزو صالون": "ايسوزو", "ايسوزو استيشن": "ايسوزو",
+        
+        // ماركات أخرى
+        "مرسيدس": "ماركات أخرى", "بي ام دبليو": "ماركات أخرى", 
+        "شفروليه": "ماركات أخرى", "جيلي": "ماركات أخرى", 
+        "مازدا": "ماركات أخرى", "ام جي": "ماركات أخرى", 
+        "دايو": "ماركات أخرى", "نوبيرا": "ماركات أخرى", "داماس": "ماركات أخرى"
     };
+
+    const brandsList = [
+        "تويوتا", "هيونداي", "كيا", "ميتسوبيشي", "نيسان", "سوزوكي",
+        "فولكس فاجن", "هوندا", "سكودا", "بي واي دي", "تاتا", 
+        "رأس شاحنة", "ايسوزو", "ماركات أخرى"
+    ];
+
+    let currentUnknownModel = "";
+    let unknownModelResolver = null;
+
+    function normalizeChassisNumber(fullNum, isPlate) {
+        if (isPlate) return fullNum;
+        if (fullNum.length >= 4) return fullNum.slice(-4);
+        if (fullNum.length > 0) return fullNum.padStart(4, '0');
+        return fullNum;
+    }
 
     async function loadCache() {
         if (cacheLoaded) return;
-        
         const [foundSnap, missingSnap] = await Promise.all([
             db.collection('found_cars').get(),
             db.collection('missing_cars').get()
         ]);
-
         foundSnap.forEach(doc => {
             const data = doc.data();
             foundCarsCache.set(data.chassis_full, { id: doc.id, ...data });
         });
-
         missingSnap.forEach(doc => {
             const data = doc.data();
             const key = `${data.chassis_suffix}_${data.is_plate}`;
-            if (!missingCarsCache.has(key)) {
-                missingCarsCache.set(key, []);
-            }
+            if (!missingCarsCache.has(key)) missingCarsCache.set(key, []);
             missingCarsCache.get(key).push({ id: doc.id, ...data });
         });
-
         cacheLoaded = true;
     }
 
@@ -289,13 +233,71 @@
             Array.from(missingCarsCache.values()).reduce((sum, arr) => sum + arr.length, 0);
     }
 
-    async function processDataOptimized() {
-        // تحقق من تسجيل الدخول
-        if (!auth.currentUser) {
-            alert('يجب تسجيل الدخول أولاً!');
+    function findModelInText(line) {
+        const lowerLine = line.toLowerCase();
+        for (let model in carDict) {
+            if (lowerLine.includes(model.toLowerCase())) {
+                return { model: model, brand: carDict[model] };
+            }
+        }
+        return null;
+    }
+
+    function extractPossibleModel(line) {
+        const words = line.match(/[a-zA-Zء-ي]+/g);
+        if (words && words.length > 0) {
+            for (let word of words) {
+                if (word.length >= 3 && !['شاسي', 'لوحة', 'لوحه', 'رقم'].includes(word)) {
+                    return word;
+                }
+            }
+        }
+        return "غير محدد";
+    }
+
+    function showUnknownModelDialog(modelName) {
+        return new Promise((resolve) => {
+            currentUnknownModel = modelName;
+            unknownModelResolver = resolve;
+            
+            document.getElementById('unknownModelName').textContent = modelName;
+            
+            const select = document.getElementById('brandSelectModal');
+            select.innerHTML = '<option value="">-- اختر الماركة --</option>';
+            brandsList.forEach(brand => {
+                const opt = document.createElement('option');
+                opt.value = brand;
+                opt.textContent = brand;
+                select.appendChild(opt);
+            });
+            
+            document.getElementById('unknownModelModal').style.display = 'block';
+        });
+    }
+
+    function saveUnknownModel() {
+        const selectedBrand = document.getElementById('brandSelectModal').value;
+        if (!selectedBrand) {
+            alert('الرجاء اختيار الماركة');
             return;
         }
         
+        carDict[currentUnknownModel] = selectedBrand;
+        document.getElementById('unknownModelModal').style.display = 'none';
+        
+        if (unknownModelResolver) {
+            unknownModelResolver({ model: currentUnknownModel, brand: selectedBrand });
+        }
+    }
+
+    function skipUnknownModel() {
+        document.getElementById('unknownModelModal').style.display = 'none';
+        if (unknownModelResolver) {
+            unknownModelResolver(null);
+        }
+    }
+
+    async function processDataOptimized() {
         const startTime = Date.now();
         const text = document.getElementById('rawInput').value;
         const lines = text.split('\n').filter(l => l.trim());
@@ -311,7 +313,7 @@
         
         await loadCache();
 
-        let uploaded = 0, duplicates = 0;
+        let uploaded = 0, duplicates = 0, skipped = 0;
         let globalFinder = "غير مسجل";
         let matchesHTML = "";
 
@@ -335,24 +337,35 @@
             if (!allNums) continue;
             
             let fullNum = allNums.reduce((a, b) => a.length > b.length ? a : b);
-            if (fullNum.length < 4) continue;
+            if (fullNum.length < 1) {
+                skipped++;
+                continue;
+            }
             
             let isPlate = /لوحه|لوحة/.test(line);
-            let suffix = isPlate ? fullNum : fullNum.slice(-4);
+            let suffix = normalizeChassisNumber(fullNum, isPlate);
 
-            let model = "غير محدد", brand = "ماركات أخرى";
-            for (let key in carDict) {
-                if (line.includes(key)) { 
-                    model = key; 
-                    brand = carDict[key]; 
-                    break; 
+            let modelInfo = findModelInText(line);
+            
+            if (!modelInfo) {
+                const possibleModel = extractPossibleModel(line);
+                document.getElementById('status').innerHTML = `⏸️ موديل غير معروف: ${possibleModel}`;
+                
+                modelInfo = await showUnknownModelDialog(possibleModel);
+                
+                if (!modelInfo) {
+                    skipped++;
+                    continue;
                 }
             }
+
+            const { model, brand } = modelInfo;
 
             if (!foundCarsCache.has(fullNum)) {
                 const newCarRef = db.collection('found_cars').doc();
                 const carData = {
-                    brand, model,
+                    brand, 
+                    model,
                     chassis_full: fullNum,
                     chassis_suffix: suffix,
                     is_plate: isPlate,
@@ -383,7 +396,12 @@
         const timeTaken = ((endTime - startTime) / 1000).toFixed(2);
         
         document.getElementById('progressBar').style.display = 'none';
-        document.getElementById('status').innerHTML = `✅ المضاف: ${uploaded} | ⚠️ المكرر: ${duplicates} | ⏱️ الوقت: ${timeTaken} ثانية`;
+        
+        let statusMsg = `✅ المضاف: ${uploaded} | ⚠️ المكرر: ${duplicates}`;
+        if (skipped > 0) statusMsg += ` | 🚫 المتجاهل: ${skipped}`;
+        statusMsg += ` | ⏱️ الوقت: ${timeTaken} ثانية`;
+        
+        document.getElementById('status').innerHTML = statusMsg;
         document.getElementById('speedStat').innerText = `${timeTaken}s`;
         document.getElementById('uploadMatchesBody').innerHTML = matchesHTML || '<tr><td colspan="4" style="text-align:center;">لا توجد مطابقات</td></tr>';
         
@@ -403,15 +421,8 @@
     }
 
     async function clearData() {
-        if (!auth.currentUser) {
-            alert('يجب تسجيل الدخول أولاً!');
-            return;
-        }
-        
         if (!confirm("🚨 تحذير: سيتم حذف كل البيانات. هل تريد المتابعة؟")) return;
-        
         document.getElementById('status').innerHTML = "⏳ جاري المسح...";
-        
         const cols = ['found_cars', 'missing_cars', 'confirmed_matches'];
         for (const col of cols) {
             const snap = await db.collection(col).get();
@@ -419,14 +430,18 @@
             snap.forEach(d => batch.delete(d.ref));
             await batch.commit();
         }
-        
         foundCarsCache.clear();
         missingCarsCache.clear();
         cacheLoaded = false;
-        
         alert("✅ تم تصفير الداتابيس بنجاح");
         location.reload();
     }
+
+    window.onload = async () => { 
+        await loadPublic();
+        await loadCache();
+        updateStatsFromCache();
+    };
 </script>
 </body>
 </html>
