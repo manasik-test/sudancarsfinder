@@ -71,9 +71,16 @@
         @keyframes slideDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .modal h3 { color: #1a73e8; margin-bottom: 20px; font-size: 20px; }
         .modal select { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; font-size: 15px; }
+        .modal input { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; font-size: 15px; }
         .modal button { width: 100%; padding: 12px; margin: 8px 0; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; }
         .modal .btn-save { background: #28a745; color: white; }
         .modal .btn-skip { background: #6c757d; color: white; }
+        .modal .btn-use { background: #17a2b8; color: white; }
+        
+        .correction-hint { background: #e7f3ff; border-left: 4px solid #2196F3; padding: 12px; margin: 10px 0; border-radius: 5px; font-size: 13px; color: #555; }
+        .suggestions { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+        .suggestion-btn { background: #f0f0f0; border: 1px solid #ddd; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 13px; transition: 0.2s; }
+        .suggestion-btn:hover { background: #e3f2fd; border-color: #2196F3; }
     </style>
 </head>
 <body>
@@ -464,20 +471,33 @@ async function processData() {
         
         const fullNum = nums.reduce((a, b) => a.length > b.length ? a : b);
         
-        
+        // تجاهل الأرقام الغريبة
+        if (fullNum.length < 3 || fullNum.length > 15) { 
+            skipped++; 
+            continue; 
+        }
         
         const isPlate = /لوحه|لوحة|\/خ/.test(line);
         const suffix = normalizeChassis(fullNum, isPlate);
         
         let info = findModel(line);
         if (!info) {
-            const possibleModel = extractModel(line);
-            if (possibleModel === "غير محدد" || possibleModel.length < 3) {
-                skipped++;
-                continue;
+            // بدلاً من السؤال، نضيف تلقائياً لـ "ماركات أخرى"
+            // الموديل = كل السطر ما عدا رقم الشاسي
+            let modelText = line.replace(fullNum, '').trim();
+            
+            // إزالة الكلمات غير المفيدة
+            modelText = modelText.replace(/شاسي|لوحة|لوحه|رقم/gi, '').trim();
+            
+            // إذا كان النص فاضي أو قصير جداً، نستخدم "غير محدد"
+            if (!modelText || modelText.length < 2) {
+                modelText = "غير محدد";
             }
-            info = await showModal(possibleModel);
-            if (!info) { skipped++; continue; }
+            
+            info = {
+                brand: "ماركات أخرى",
+                model: modelText
+            };
         }
         
         if (cache.found.has(fullNum)) {
