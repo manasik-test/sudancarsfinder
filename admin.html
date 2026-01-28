@@ -174,255 +174,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-<script >// ═══════════════════════════════════════════════════════
-// SMART MATCHING SYSTEM v1.0
-// Based on real Sudan car lists analysis
-// ═══════════════════════════════════════════════════════
 
-// قاموس الاختصارات والأسماء الشعبية (من التحليل الفعلي)
-const carAliases = {
-    // تويوتا
-    "مونكا": { model: "كورولا", brand: "تويوتا" },
-    "مونيكا": { model: "كورولا", brand: "تويوتا" },
-    "شريحه": { model: "هايس", brand: "تويوتا" },
-    "شريحة": { model: "هايس", brand: "تويوتا" },
-    "بوكسي": { model: "هايلوكس", brand: "تويوتا" },
-    "بوكس": { model: "هايلوكس", brand: "تويوتا" },
-    "بكس تايوتا": { model: "هايلوكس", brand: "تويوتا" },
-    
-    // هيونداي
-    "مضلع": { model: "اكسنت", brand: "هيونداي" },
-    "دبدوب": { model: "اكسنت", brand: "هيونداي" },
-    "جياد": { model: "اكسنت", brand: "هيونداي" },
-    "سحلية": { model: "أفانتي", brand: "هيونداي" },
-    "سحليه": { model: "أفانتي", brand: "هيونداي" },
-    "منفوخه": { model: "أفانتي", brand: "هيونداي" },
-    "منفوخة": { model: "أفانتي", brand: "هيونداي" },
-    "كريس": { model: "جريس", brand: "هيونداي" },
-    "كريز": { model: "جريس", brand: "هيونداي" },
-    "ساريكس": { model: "استايركس", brand: "هيونداي" },
-    "ستايركس": { model: "استايركس", brand: "هيونداي" },
-    
-    // ميتسوبيشي
-    "بومه": { model: "لانسر", brand: "ميتسوبيشي" },
-    "بومة": { model: "لانسر", brand: "ميتسوبيشي" },
-    "قرش": { model: "لانسر", brand: "ميتسوبيشي" },
-    
-    // أخرى
-    "شفر": { model: "شفروليه", brand: "شفروليه" },
-    "التو": { model: "ألتو", brand: "سوزوكي" }
-};
-
-// قاموس التصحيحات الإملائية (من القوائم الفعلية)
-const spellingFixes = {
-    "كوريلا": "كورولا",
-    "كرولا": "كورولا",
-    "كورلا": "كورولا",
-    "مورنينغ": "مورنيق",
-    "مورننغ": "مورنيق",
-    "مورننق": "مورنيق",
-    "مورنينق": "مورنيق",
-    "اكسن": "اكسنت",
-    "كلك": "كليك",
-    "كيلك": "كليك",
-    "كليلك": "كليك",
-    "شيفروليه": "شفروليه",
-    "فانتي": "افانتي",
-    "لانس": "لانسر",
-    "اسبورتاج": "سبورتاج",
-    "سبورتاج": "سبورتاج",
-    "استاريكس": "استايركس",
-    "اوبتما": "اوبتيما",
-    "فسيتو": "فيستو",
-    "يارس": "ياريس",
-    "دستر": "داستر",
-    "ماريسدس": "مرسيدس",
-    "مارسيدس": "مرسيدس",
-    "تايوته": "تويوتا",
-    "توييرا": "تويوتا",
-    "متسوبيشي": "ميتسوبيشي",
-    "مستبيشي": "ميتسوبيشي",
-    "مستوبيشي": "ميتسوبيشي",
-    "ميستوبيشي": "ميتسوبيشي",
-    "ديهاتسو": "دايهاتسو",
-    "دهاتسون": "دايهاتسو",
-    "فلوكسواجن": "فولكس فاجن",
-    "بيرادو": "برادو",
-    "ديدون": "دبدوب",
-    "جنسي": "صني"
-};
-
-// تطبيع النص العربي
-function normalizeArabic(text) {
-    if (!text) return '';
-    return text
-        .replace(/[أإآ]/g, 'ا')
-        .replace(/[ىئ]/g, 'ي')
-        .replace(/ة/g, 'ه')
-        .replace(/\s+/g, '')
-        .trim();
-}
-
-// تحويل الأرقام العربية إلى إنجليزية
-function convertArabicNumbers(str) {
-    if (!str) return str;
-    const arabicNums = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
-    const englishNums = ['0','1','2','3','4','5','6','7','8','9'];
-    let result = str;
-    for (let i = 0; i < 10; i++) {
-        result = result.replace(new RegExp(arabicNums[i], 'g'), englishNums[i]);
-    }
-    return result;
-}
-
-// حساب Levenshtein Distance
-function levenshteinDistance(s1, s2) {
-    if (!s1 || !s2) return 999;
-    const m = s1.length, n = s2.length;
-    const dp = Array(m + 1).fill().map(() => Array(n + 1).fill(0));
-    
-    for (let i = 0; i <= m; i++) dp[i][0] = i;
-    for (let j = 0; j <= n; j++) dp[0][j] = j;
-    
-    for (let i = 1; i <= m; i++) {
-        for (let j = 1; j <= n; j++) {
-            if (s1[i-1] === s2[j-1]) {
-                dp[i][j] = dp[i-1][j-1];
-            } else {
-                dp[i][j] = Math.min(
-                    dp[i-1][j] + 1,
-                    dp[i][j-1] + 1,
-                    dp[i-1][j-1] + 1
-                );
-            }
-        }
-    }
-    return dp[m][n];
-}
-
-// البحث الذكي عن موديل
-function smartModelMatch(input, carModels) {
-    if (!input) return null;
-    
-    const original = input;
-    input = input.trim();
-    
-    // 1. تطبيق التصحيح الإملائي
-    if (spellingFixes[input]) {
-        input = spellingFixes[input];
-    }
-    
-    // 2. البحث في الاختصارات
-    if (carAliases[input]) {
-        return {
-            model: carAliases[input].model,
-            brand: carAliases[input].brand,
-            confidence: 100,
-            method: "alias",
-            original: original
-        };
-    }
-    
-    const normalized = normalizeArabic(input);
-    
-    // 3. تطابق تام بعد التطبيع
-    for (let model in carModels) {
-        if (normalizeArabic(model) === normalized) {
-            return {
-                model: model,
-                brand: carModels[model],
-                confidence: 100,
-                method: "exact",
-                original: original
-            };
-        }
-    }
-    
-    // 4. Fuzzy matching
-    let bestMatch = null;
-    let bestDistance = Infinity;
-    
-    for (let model in carModels) {
-        const distance = levenshteinDistance(normalized, normalizeArabic(model));
-        const threshold = Math.min(2, Math.ceil(normalized.length / 3));
-        
-        if (distance <= threshold && distance < bestDistance) {
-            bestDistance = distance;
-            bestMatch = model;
-        }
-    }
-    
-    if (bestMatch && bestDistance <= 2) {
-        const confidence = Math.max(75, Math.round(100 - (bestDistance / normalized.length * 100)));
-        return {
-            model: bestMatch,
-            brand: carModels[bestMatch],
-            confidence: confidence,
-            method: "fuzzy",
-            distance: bestDistance,
-            original: original
-        };
-    }
-    
-    return null;
-}
-
-// دمج مع findModel الموجود
-function enhancedFindModel(line, carModels) {
-    if (!line) return null;
-    
-    // 1. بحث عادي أولاً (سريع)
-    for (let model in carModels) {
-        if (line.includes(model)) {
-            return {
-                model: model,
-                brand: carModels[model],
-                confidence: 100,
-                method: "direct"
-            };
-        }
-    }
-    
-    // 2. استخراج الموديل
-    let extracted = line
-        .replace(/شاسي|لوحة|لوحه|رقم/gi, '')
-        .replace(/\d+/g, '')
-        .trim();
-    
-    const words = extracted.split(/\s+/);
-    
-    // 3. محاولة كل كلمة
-    for (let word of words) {
-        if (word.length < 2) continue;
-        
-        const match = smartModelMatch(word, carModels);
-        if (match && match.confidence >= 75) {
-            return match;
-        }
-    }
-    
-    // 4. محاولة الجملة كاملة
-    const fullMatch = smartModelMatch(extracted, carModels);
-    if (fullMatch && fullMatch.confidence >= 75) {
-        return fullMatch;
-    }
-    
-    return null;
-}
-
-// تصدير الدوال
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {
-        normalizeArabic,
-        convertArabicNumbers,
-        levenshteinDistance,
-        smartModelMatch,
-        enhancedFindModel,
-        carAliases,
-        spellingFixes
-    };
-}
-</script>
 <script>
 // ═══════════════════════════════════════════════════════
 // Firebase Configuration
@@ -435,6 +187,14 @@ const firebaseConfig = {
     messagingSenderId: "222129422162",
     appId: "1:222129422162:web:c3e8d3c498b53f96afc48b"
 };
+
+        // SMART MATCHING ADDITIONS
+        const carAliases = {"مونكا":"كورولا","بوكسي":"هايلوكس","شريحه":"هايس","مضلع":"اكسنت","دبدوب":"اكسنت","جياد":"اكسنت","سحلية":"أفانتي","منفوخة":"أفانتي","بومة":"لانسر","قرش":"لانسر","شفر":"شفروليه"};
+        const spellingFixes = {"كوريلا":"كورولا","مورنينغ":"مورنيق","اكسن":"اكسنت","كلك":"كليك","شيفروليه":"شفروليه","فانتي":"افانتي","لانس":"لانسر"};
+        function normalizeArabic(t){return t?t.replace(/[أإآ]/g,'ا').replace(/[ىئ]/g,'ي').replace(/ة/g,'ه').replace(/\s+/g,''):''}
+        function levenshteinDistance(s1,s2){if(!s1||!s2)return 999;const m=s1.length,n=s2.length,dp=Array(m+1).fill().map(()=>Array(n+1).fill(0));for(let i=0;i<=m;i++)dp[i][0]=i;for(let j=0;j<=n;j++)dp[0][j]=j;for(let i=1;i<=m;i++){for(let j=1;j<=n;j++){dp[i][j]=s1[i-1]===s2[j-1]?dp[i-1][j-1]:Math.min(dp[i-1][j]+1,dp[i][j-1]+1,dp[i-1][j-1]+1)}}return dp[m][n]}
+        function smartMatch(input){if(!input)return null;input=input.trim();if(spellingFixes[input])input=spellingFixes[input];if(carAliases[input])return{model:carAliases[input],confidence:100};const norm=normalizeArabic(input);for(let m in carModels){if(normalizeArabic(m)===norm)return{model:m,brand:carModels[m],confidence:100}}let best=null,bestDist=999;for(let m in carModels){const d=levenshteinDistance(norm,normalizeArabic(m));if(d<=2&&d<bestDist){bestDist=d;best=m}}if(best)return{model:best,brand:carModels[best],confidence:Math.max(75,100-bestDist*10)};return null}
+
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
@@ -573,21 +333,13 @@ function normalizeChassis(num, isPlate) {
     return num.length >= 4 ? num.slice(-4) : num.padStart(4, '0');
 }
 
-function findModel(line) {
-    // استخدام الدالة المحسّنة
-    const result = enhancedFindModel(line, carModels);
-    
-    if (result && result.confidence >= 75) {
-        // عرض في Console للمراقبة
-        if (result.method !== 'direct') {
-            console.log(`🔍 ${result.original} → ${result.model} (${result.confidence}% via ${result.method})`);
+function findModel(text) {
+    const lower = text.toLowerCase();
+    for (let model in carModels) {
+        if (lower.includes(model.toLowerCase())) {
+            return { model, brand: carModels[model] };
         }
-        return { 
-            model: result.model, 
-            brand: result.brand 
-        };
     }
-    
     return null;
 }
 
