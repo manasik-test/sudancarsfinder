@@ -906,7 +906,10 @@
 
 <script>
 // Firebase Configuration
-const firebaseConfig = {
+
+        function convertArabicNums(str){if(!str)return str;const a=['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'],e=['0','1','2','3','4','5','6','7','8','9'];let r=str;for(let i=0;i<10;i++)r=r.replace(new RegExp(a[i],'g'),e[i]);return r}
+
+        const firebaseConfig = {
     apiKey: "AIzaSyDvAx6-priGfzGLh2AlazSkIvsoc0OcW4Q",
     authDomain: "sudancarsrecover.firebaseapp.com",
     projectId: "sudancarsrecover",
@@ -999,7 +1002,6 @@ function setSearchType(type) {
     event.target.classList.add('active');
     
     const numberInput = document.getElementById('numberInput');
-    
     const numberLabel = document.getElementById('numberLabel');
     const helper = document.getElementById('numberHelper');
     
@@ -1018,25 +1020,13 @@ function setSearchType(type) {
         helper.textContent = 'يمكن إدخال أي عدد من الأرقام';
         helper.className = 'helper-text';
     }
-    // تحويل الأرقام العربية
-function convertArabicNumbers(str) {
-    if (!str) return str;
-    const arabicNums = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
-    const englishNums = ['0','1','2','3','4','5','6','7','8','9'];
-    let result = str;
-    for (let i = 0; i < 10; i++) {
-        result = result.replace(new RegExp(arabicNums[i], 'g'), englishNums[i]);
-    }
-    return result;
-}
+    
     document.getElementById('searchBtn').disabled = true;
 }
 
 // التحقق من الإدخال
 document.getElementById('numberInput').addEventListener('input', (e) => {
-    // تحويل الأرقام العربية أولاً
-    const converted = convertArabicNumbers(e.target.value);
-    const value = converted.replace(/[^0-9]/g, '');
+    const converted = convertArabicNums(e.target.value); const value = converted.replace(/[^0-9]/g, '');
     e.target.value = value;
     
     const helper = document.getElementById('numberHelper');
