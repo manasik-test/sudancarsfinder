@@ -3,273 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>نظام استرجاع المركبات المفقودة</title>
+    <title>نظام استرجاع المركبات</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: #f8f9fa; color: #1f2937; line-height: 1.6; }
+        .header { background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); color: white; padding: 30px 20px; text-align: center; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .section { background: white; border-radius: 15px; padding: 25px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .form-group { margin-bottom: 15px; }
+        .form-label { display: block; margin-bottom: 8px; font-weight: bold; }
+        .form-input { width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 16px; }
+        .btn { width: 100%; padding: 14px; background: #2563eb; color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
         
-        :root {
-            --primary: #2563eb;
-            --primary-dark: #1e40af;
-            --success: #059669;
-            --bg: #ffffff;
-            --bg-light: #f8f9fa;
-            --text-dark: #1f2937;
-            --text-gray: #6b7280;
-            --border: #e5e7eb;
-            --facebook: #1877f2;
-        }
-        
-        body { 
-            font-family: 'Segoe UI', Tahoma, Arial, sans-serif; 
-            background: var(--bg-light);
-            color: var(--text-dark);
-            line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
-        }
-        
-        /* Header */
-        .header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: white;
-            padding: 25px 20px;
-            text-align: center;
-        }
-        
-        .logo { font-size: 48px; margin-bottom: 10px; }
-        .title { font-size: 22px; font-weight: bold; margin-bottom: 5px; }
-        .subtitle { font-size: 14px; opacity: 0.9; }
-        
-        /* Stats */
-        .stats {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 20px;
-            background: white; margin: -20px 15px 0; border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1); position: relative; z-index: 1;
-        }
-        .stat { text-align: center; padding: 10px; }
-        .stat-num { display: block; font-size: 28px; font-weight: bold; color: var(--primary); margin-bottom: 5px; }
-        .stat-label { display: block; font-size: 12px; color: var(--text-gray); }
-        
-        /* Container */
-        .container { max-width: 600px; margin: 0 auto; padding: 0 15px 20px; }
-        
-        /* Section */
-        .section {
-            background: white; border-radius: 15px; padding: 25px 20px; margin: 20px 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-        .section-title {
-            font-size: 20px; font-weight: bold; color: var(--text-dark);
-            margin-bottom: 20px; display: flex; align-items: center; gap: 10px;
-        }
-        
-        /* Search Form */
-        .search-type { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .type-btn {
-            padding: 14px; background: var(--bg-light); border: 2px solid var(--border);
-            border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer;
-            transition: all 0.3s; text-align: center;
-        }
-        .type-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-        
-        .form-group { margin-bottom: 18px; }
-        .form-label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: var(--text-dark); }
-        .form-input {
-            width: 100%; padding: 14px; border: 2px solid var(--border);
-            border-radius: 10px; font-size: 16px; transition: border 0.3s;
-        }
-        .form-input:focus { outline: none; border-color: var(--primary); }
-        
-        .helper-text { font-size: 13px; color: var(--text-gray); margin-top: 5px; }
-        .helper-error { color: #dc2626; }
-        .helper-success { color: var(--success); }
-        
-        /* Button */
-        .btn {
-            width: 100%; padding: 16px; background: var(--primary); color: white;
-            border: none; border-radius: 10px; font-size: 18px; font-weight: bold;
-            cursor: pointer; transition: all 0.3s; display: flex; align-items: center;
-            justify-content: center; gap: 8px;
-        }
-        .btn:active { transform: scale(0.98); }
-        .btn:disabled { background: #cbd5e1; cursor: not-allowed; }
-        .btn-secondary { background: var(--success); }
+        /* التبويبات */
+        .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; text-align: center; }
+        .tab-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
 
-        /* Results Styling */
-        .result { display: none; margin-top: 20px; padding: 10px; animation: slideIn 0.3s; }
-        .result-not-found { background: #fff3cd; border: 2px solid #ffc107; padding: 20px; border-radius: 12px; }
-        
-        /* Popup Styling */
-        .success-overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); z-index: 10000;
-            align-items: center; justify-content: center; backdrop-filter: blur(5px);
-        }
-        .success-card {
-            background: white; padding: 30px; border-radius: 20px; text-align: center;
-            max-width: 90%; width: 350px;
-            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            border-top: 5px solid var(--success);
-        }
-        @keyframes popIn {
-            from { transform: scale(0.5); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-        .gratitude-text { color: #059669; font-size: 22px; font-weight: bold; margin: 15px 0; }
+        /* كرت عرض السيارة */
+        .car-card { border: 2px solid #2563eb; border-radius: 12px; padding: 15px; margin-top: 15px; background: #eff6ff; }
+        .car-info { margin-bottom: 15px; }
+        .car-info div { margin-bottom: 5px; font-size: 15px; }
+        .match-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn-yes { background: #059669; }
+        .btn-no { background: #6b7280; }
 
-        /* Loading */
-        .loading { display: none; text-align: center; padding: 30px; }
-        .spinner {
-            width: 50px; height: 50px; margin: 0 auto 15px;
-            border: 5px solid var(--bg-light); border-top: 5px solid var(--primary);
-            border-radius: 50%; animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .loading-text { color: var(--text-gray); font-size: 15px; }
-
-        /* Autocomplete */
-        .autocomplete { position: relative; }
-        .autocomplete-items {
-            position: absolute; border: 2px solid var(--border); border-top: none;
-            border-radius: 0 0 10px 10px; z-index: 99; top: 100%; left: 0; right: 0;
-            max-height: 200px; overflow-y: auto; background: white;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
-        }
-        .autocomplete-items div { padding: 12px; cursor: pointer; border-bottom: 1px solid var(--bg-light); }
-        .autocomplete-items div:hover { background-color: var(--bg-light); }
+        /* النوافذ المنبثقة */
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .popup { background: white; padding: 30px; border-radius: 20px; text-align: center; width: 90%; max-width: 400px; }
         
-        /* Footer & FAQ */
-        .footer { background: var(--text-dark); color: white; padding: 30px 20px 20px; margin-top: 30px; }
-        .footer-content { max-width: 600px; margin: 0 auto; text-align: center; }
-        .copyright { font-size: 13px; color: #9ca3af; margin-top: 20px; padding-top: 20px; border-top: 1px solid #374151; }
-        
-        .faq-item { border-bottom: 1px solid var(--border); padding: 15px 0; }
-        .faq-question { display: flex; justify-content: space-between; cursor: pointer; font-weight: 600; }
-        .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; color: var(--text-gray); font-size: 14px; }
-        .faq-item.active .faq-answer { max-height: 200px; padding-top: 10px; }
+        #resultsArea, #registrationForm { display: none; }
+        .loading { display: none; text-align: center; padding: 20px; color: #2563eb; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <div class="logo">🚗</div>
-    <div class="title">نظام استرجاع المركبات المفقودة</div>
-    <div class="subtitle">ابحث عن سيارتك بسهولة وأمان</div>
-</div>
-
-<div class="stats">
-    <div class="stat"><span class="stat-num">2.5K</span><span class="stat-label">مُسترجع</span></div>
-    <div class="stat"><span class="stat-num">450</span><span class="stat-label">نشط</span></div>
-    <div class="stat"><span class="stat-num">92%</span><span class="stat-label">نجاح</span></div>
+    <h1>🚗 نظام استرجاع المركبات</h1>
+    <p>البحث الذكي عن المفقودات</p>
 </div>
 
 <div class="container">
-    <div class="section">
-        <h2 class="section-title">🔍 ابحث عن سيارتك</h2>
-        
-        <div class="search-type">
-            <div class="type-btn active" onclick="setSearchType('chassis')">🔢 رقم شاسي</div>
-            <div class="type-btn" onclick="setSearchType('plate')">🚗 رقم لوحة</div>
+    <div class="section" id="searchSection">
+        <div class="tabs">
+            <div class="tab-btn active" onclick="setMode('chassis')">🔢 رقم شاسي</div>
+            <div class="tab-btn" onclick="setMode('plate')">🚗 رقم لوحة</div>
         </div>
-        
         <div class="form-group">
-            <label class="form-label" id="numberLabel">أدخل آخر 4 أرقام من الشاسي</label>
-            <input type="text" class="form-input" id="numberInput" placeholder="1234" maxlength="4">
-            <div class="helper-text helper-error" id="numberHelper">⚠️ يجب إدخال 4 أرقام بالضبط</div>
+            <label class="form-label" id="mainLabel">أدخل آخر 4 أرقام من الشاسي</label>
+            <input type="text" class="form-input" id="mainInput" placeholder="مثلاً: 1234">
         </div>
-        
         <div class="form-group">
-            <label class="form-label">رقم تلفونك (للتواصل معك)</label>
+            <label class="form-label">رقم هاتفك (ضروري للتواصل)</label>
             <input type="tel" class="form-input" id="phoneInput" placeholder="0912345678">
-            <div class="helper-text">ضروري جداً للتواصل معك عند العثور على السيارة</div>
         </div>
-        
-        <button class="btn" id="searchBtn" onclick="startSearch()" disabled>🔍 بدء البحث</button>
-        
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            <div class="loading-text">جاري البحث في قاعدة البيانات...</div>
-        </div>
-        
-        <div class="result result-not-found" id="resultNotFound">
-            <h3>🔍 السيارة لم تظهر بعد</h3>
-            <p style="color: #856404; margin-bottom: 15px; font-size: 14px;">ساعدنا بتسجيل بيانات سيارتك عشان نخطرك فور ظهورها:</p>
-            
-            <div class="register-form">
-                <div class="form-group">
-                    <label class="form-label">الماركة</label>
-                    <div class="autocomplete">
-                        <input type="text" class="form-input" id="brandInput" placeholder="ابدأ الكتابة... (مثال: تويوتا)">
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">الموديل</label>
-                    <div class="autocomplete">
-                        <input type="text" class="form-input" id="modelInput" placeholder="ابدأ الكتابة... (مثال: كورولا)">
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">رقم الشاسي الكامل</label>
-                    <input type="text" class="form-input" id="fullChassisInput" placeholder="أدخل آخر 6 أرقام على الأقل" maxlength="17">
-                </div>
-                
-                <button class="btn btn-secondary" onclick="registerRequest()">📝 تسجيل الطلب</button>
-            </div>
-        </div>
+        <button class="btn" onclick="handleSearch()">🔍 بدء البحث</button>
+        <div class="loading" id="loading">جاري فحص قاعدة البيانات...</div>
     </div>
-    
-    <div class="section">
-        <h2 class="section-title">❓ أسئلة شائعة</h2>
-        
-        <div class="faq-item" onclick="toggleFaq(this)">
-            <div class="faq-question"><span>هل الخدمة مجانية؟</span><span>▼</span></div>
-            <div class="faq-answer">نعم، الخدمة مجانية بالكامل ولا توجد أي رسوم مخفية</div>
-        </div>
-        
-        <div class="faq-item active" onclick="toggleFaq(this)">
-            <div class="faq-question"><span>كم يستغرق البحث؟</span><span>▼</span></div>
-            <div class="faq-answer">عادة 24-48 ساعة، وسنخطرك فوراً عند ظهور السيارة</div>
-        </div>
+
+    <div class="section" id="resultsArea">
+        <h3 style="text-align: center; color: #1e40af; margin-bottom: 15px;">🔍 وجدنا سيارة مطابقة!</h3>
+        <p style="text-align: center; font-size: 14px; margin-bottom: 15px;">يرجى التأكد مما إذا كانت هذه بيانات سيارتك:</p>
+        <div id="carsList"></div>
     </div>
-    
-    <div class="section">
-        <div class="privacy-note">
-            <span>🔒</span><span>بياناتك محمية ومشفرة ولن نشاركها مع أي جهة</span>
+
+    <div class="section" id="registrationForm">
+        <h3 style="color: #b45309; margin-bottom: 10px;">لم تجدها؟ سجلها كمفقودة</h3>
+        <div class="form-group">
+            <input type="text" class="form-input" id="carModel" placeholder="الماركة والموديل (تويوتا كورولا مثلاً)">
         </div>
+        <button class="btn" style="background: #059669;" onclick="saveMissing()">📝 تسجيل الطلب الآن</button>
     </div>
 </div>
 
-<div class="footer">
-    <div class="footer-content">
-        <div class="copyright">© 2026 نظام استرجاع المركبات المفقودة - جميع الحقوق محفوظة</div>
-    </div>
-</div>
-
-<div id="matchPopup" class="success-overlay">
-    <div class="success-card">
-        <div style="font-size: 60px; margin-bottom: 10px;">🤲</div>
-        <div class="gratitude-text">الحمد لله الذي جمع</div>
-        <p style="color: #4b5563; margin-bottom: 20px; font-size: 16px;">
-            وجدنا سيارة تطابق البيانات!<br>
-            سنتواصل معك قريباً جداً لتأكيد الملكية.
-        </p>
-        <button onclick="location.reload()" 
-                style="background:#059669; color:white; border:none; padding:12px 40px; border-radius:10px; cursor:pointer; font-weight:bold; font-size:16px;">
-            حسناً
-        </button>
-    </div>
-</div>
-
-<div class="popup-overlay" id="successPopup">
-    <div class="popup-box">
-        <div style="font-size: 50px; margin-bottom: 15px;">✅</div>
-        <h3 class="popup-title">تم تسجيل طلبك بنجاح!</h3>
-        <p class="popup-message">سنخطرك فور ظهور السيارة</p>
-        <button onclick="location.reload()" 
-                style="background:#2563eb; color:white; border:none; padding:12px 30px; border-radius:10px; cursor:pointer; font-weight:bold;">
-            حسناً
-        </button>
+<div id="matchPopup" class="overlay">
+    <div class="popup">
+        <div style="font-size: 60px;">🤲</div>
+        <h2 style="color: #059669; margin: 15px 0;">الحمد لله الذي جمع</h2>
+        <p>تم تسجيل تأكيدك بنجاح. سنقوم بمراجعة البيانات والاتصال بك فوراً لتسليمك السيارة.</p>
+        <button class="btn" onclick="location.reload()" style="margin-top: 20px;">حسناً</button>
     </div>
 </div>
 
@@ -277,7 +89,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
 <script>
-// 1. Firebase Configuration
 const firebaseConfig = {
     apiKey: "AIzaSyDvAx6-priGfzGLh2AlazSkIvsoc0OcW4Q",
     authDomain: "sudancarsrecover.firebaseapp.com",
@@ -288,198 +99,120 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-db.enablePersistence({ synchronizeTabs: true }).catch(err => console.log(err));
 
-// 2. Helper Functions
-function convertArabicNums(str) {
-    if (!str) return "";
-    const a = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
-    const e = ['0','1','2','3','4','5','6','7','8','9'];
-    let r = str;
-    for (let i = 0; i < 10; i++) r = r.replace(new RegExp(a[i], 'g'), e[i]);
-    return r;
-}
+let currentMode = 'chassis';
+let tempMatchedCar = null;
 
-function toggleFaq(element) {
-    const isActive = element.classList.contains('active');
-    document.querySelectorAll('.faq-item').forEach(item => item.classList.remove('active'));
-    if (!isActive) element.classList.add('active');
-}
-
-// 3. Global Variables
-let searchType = 'chassis';
-const brands = ["تويوتا", "هيونداي", "كيا", "ميتسوبيشي", "نيسان", "سوزوكي", "فولكس فاجن", "هوندا", "سكودا", "بي واي دي", "ماركات أخرى"];
-const models = ["كورولا", "اكسنت", "توسان", "لانسر", "كليك", "مورنيق", "صني", "بوكسي", "هايس", "افانتي"];
-
-// 4. UI Interaction
-function setSearchType(type) {
-    searchType = type;
-    document.querySelectorAll('.type-btn').forEach(btn => btn.classList.remove('active'));
+function setMode(mode) {
+    currentMode = mode;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     event.target.classList.add('active');
-    
-    const numberInput = document.getElementById('numberInput');
-    const numberLabel = document.getElementById('numberLabel');
-    const helper = document.getElementById('numberHelper');
-    
-    numberInput.value = '';
-    
-    if (type === 'chassis') {
-        numberLabel.textContent = 'أدخل آخر 4 أرقام من الشاسي';
-        numberInput.placeholder = '1234';
-        numberInput.maxLength = 4;
-        helper.textContent = '⚠️ يجب إدخال 4 أرقام بالضبط';
-        helper.className = 'helper-text helper-error';
-    } else {
-        numberLabel.textContent = 'أدخل رقم اللوحة';
-        numberInput.placeholder = 'أدخل الأرقام فقط';
-        numberInput.maxLength = 10;
-        helper.textContent = 'يمكن إدخال أي عدد من الأرقام';
-        helper.className = 'helper-text';
-    }
-    document.getElementById('searchBtn').disabled = true;
+    document.getElementById('mainLabel').textContent = mode === 'chassis' ? 'أدخل آخر 4 أرقام من الشاسي' : 'أدخل رقم اللوحة';
 }
 
-// Input Validation
-document.getElementById('numberInput').addEventListener('input', (e) => {
-    const converted = convertArabicNums(e.target.value); 
-    const value = converted.replace(/[^0-9]/g, '');
-    e.target.value = value;
-    
-    const helper = document.getElementById('numberHelper');
-    const btn = document.getElementById('searchBtn');
-    
-    if (searchType === 'chassis') {
-        if (value.length < 4) {
-            helper.textContent = `⚠️ يجب إدخال 4 أرقام (تم إدخال ${value.length})`;
-            helper.className = 'helper-text helper-error';
-            btn.disabled = true;
-        } else {
-            helper.textContent = '✅ جاهز للبحث';
-            helper.className = 'helper-text helper-success';
-            btn.disabled = false;
-        }
-    } else {
-        btn.disabled = value.length === 0;
-    }
-});
-
-// 5. Main Search Logic (Modified for Match Popup)
-async function startSearch() {
-    const number = document.getElementById('numberInput').value.trim();
+async function handleSearch() {
+    const mainVal = document.getElementById('mainInput').value.trim();
     const phone = document.getElementById('phoneInput').value.trim();
-    
-    if (!number || !phone) return alert('⚠️ يرجى إكمال جميع البيانات (الرقم والهاتف)');
-    if (phone.length < 10) return alert('⚠️ يرجى إدخال رقم هاتف صحيح');
-    
-    document.getElementById('resultNotFound').style.display = 'none';
-    document.getElementById('loading').style.display = 'block';
-    
-    try {
-        // Query found_cars
-        const snapshot = await db.collection('found_cars').get();
-        let matchedCar = null;
-        let matchedDocId = null;
-        
-        // Find match in javascript (safer for suffixes)
-        for (let doc of snapshot.docs) {
-            const data = doc.data();
-            const fullChassis = (data.chassis_full || data.chassis || "").toUpperCase();
-            const plate = (data.plate || "").toUpperCase();
-            
-            if (fullChassis.endsWith(number.toUpperCase()) || (plate && plate.endsWith(number.toUpperCase()))) {
-                matchedCar = data;
-                matchedDocId = doc.id;
-                break; // Stop at first match or collect all if preferred
-            }
-        }
-        
-        if (matchedCar) {
-            // ✅ MATCH FOUND
-            // 1. Add to Confirmed Matches for Admin
-            await db.collection('confirmed_matches').add({
-                user_phone: phone,
-                search_number: number,
-                match_type: searchType,
-                found_car_id: matchedDocId,
-                found_car_data: matchedCar,
-                status: 'new', // Admin sees this as new match
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            });
 
-            // 2. Show Alhamdulillah Popup (No details shown to user)
-            document.getElementById('matchPopup').style.display = 'flex';
-            
+    if (!mainVal || !phone) return alert("يرجى ملء كافة الحقول");
+
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('resultsArea').style.display = 'none';
+    document.getElementById('registrationForm').style.display = 'none';
+
+    try {
+        const snapshot = await db.collection('found_cars').get();
+        let results = [];
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const plate = (data.plate_number || "").toString();
+            const chassis = (data.chassis_full || data.chassis || "").toString();
+
+            if (currentMode === 'chassis' && chassis.endsWith(mainVal)) {
+                results.push({ id: doc.id, ...data });
+            } else if (currentMode === 'plate' && plate.includes(mainVal)) {
+                results.push({ id: doc.id, ...data });
+            }
+        });
+
+        if (results.length > 0) {
+            displayResults(results);
         } else {
-            // ❌ NO MATCH FOUND
-            // Show registration form
-            document.getElementById('resultNotFound').style.display = 'block';
-            document.getElementById('fullChassisInput').value = number; // Auto-fill
+            document.getElementById('registrationForm').style.display = 'block';
         }
-        
-    } catch (error) {
-        console.error("Error:", error);
-        alert("حدث خطأ في الاتصال، يرجى المحاولة لاحقاً");
+    } catch (e) {
+        alert("خطأ في الاتصال");
     } finally {
         document.getElementById('loading').style.display = 'none';
     }
 }
 
-// 6. Auto-complete Logic
-function setupAutocomplete(id, list) {
-    const input = document.getElementById(id);
-    if(!input) return;
-    
-    input.addEventListener('input', function() {
-        const val = this.value;
-        const container = this.parentNode;
-        const old = container.querySelector('.autocomplete-items');
-        if(old) old.remove();
-        if(!val) return;
-        
-        const items = document.createElement('div');
-        items.className = 'autocomplete-items';
-        list.forEach(item => {
-            if(item.substr(0, val.length).toUpperCase() === val.toUpperCase()) {
-                const d = document.createElement('div');
-                d.innerHTML = `<strong>${item.substr(0, val.length)}</strong>${item.substr(val.length)}`;
-                d.addEventListener('click', function() {
-                    input.value = item;
-                    items.remove();
-                });
-                items.appendChild(d);
-            }
-        });
-        container.appendChild(items);
+function displayResults(cars) {
+    const list = document.getElementById('carsList');
+    list.innerHTML = '';
+    document.getElementById('resultsArea').style.display = 'block';
+
+    cars.forEach(car => {
+        const card = document.createElement('div');
+        card.className = 'car-card';
+        card.innerHTML = `
+            <div class="car-info">
+                <div><strong>الماركة:</strong> ${car.brand || 'غير محدد'}</div>
+                <div><strong>الموديل:</strong> ${car.model || 'غير محدد'}</div>
+                <div><strong>رقم الشاسي:</strong> ****${(car.chassis_full || "").slice(-4)}</div>
+            </div>
+            <div style="font-weight: bold; margin-bottom: 10px; text-align: center;">هل هذه هي سيارتك؟</div>
+            <div class="match-actions">
+                <button class="btn btn-yes" onclick="confirmMatch('${car.id}')">نعم، سيارتي</button>
+                <button class="btn btn-no" onclick="showRegForm()">لا، ليست هي</button>
+            </div>
+        `;
+        list.appendChild(card);
     });
 }
-setupAutocomplete('brandInput', brands);
-setupAutocomplete('modelInput', models);
 
-// 7. Register Logic
-async function registerRequest() {
-    const brand = document.getElementById('brandInput').value;
-    const model = document.getElementById('modelInput').value;
-    const chassis = document.getElementById('fullChassisInput').value;
+async function confirmMatch(carId) {
     const phone = document.getElementById('phoneInput').value;
+    try {
+        // حفظ في قائمة الماتشد ليراها الأدمن
+        await db.collection('confirmed_matches').add({
+            user_phone: phone,
+            found_car_id: carId,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            status: 'user_confirmed'
+        });
+        document.getElementById('matchPopup').style.display = 'flex';
+    } catch (e) {
+        alert("حدث خطأ أثناء التأكيد");
+    }
+}
 
-    if(!brand || !chassis || !phone) return alert('يرجى ملء كافة البيانات');
+function showRegForm() {
+    document.getElementById('resultsArea').style.display = 'none';
+    document.getElementById('registrationForm').style.display = 'block';
+}
+
+async function saveMissing() {
+    const mainVal = document.getElementById('mainInput').value;
+    const phone = document.getElementById('phoneInput').value;
+    const model = document.getElementById('carModel').value;
+
+    if(!model) return alert("يرجى إدخال الموديل");
 
     try {
         await db.collection('missing_cars').add({
-            brand, 
-            model, 
-            chassis_full: chassis, 
-            chassis_suffix: chassis.slice(-4),
-            owner_phone: phone,
+            phone,
+            model,
+            search_val: mainVal,
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
-        document.getElementById('successPopup').style.display = 'flex';
+        alert("تم تسجيل بلاغك، سنبحث عنها.");
+        location.reload();
     } catch(e) {
-        alert('حدث خطأ أثناء التسجيل');
-        console.error(e);
+        alert("خطأ في الحفظ");
     }
 }
 </script>
-
 </body>
 </html>
